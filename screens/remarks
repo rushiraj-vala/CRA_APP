@@ -1,0 +1,4 @@
+problem: when calling onChangeText on UR10 angle input. the placeholderText is updatin simultaneously
+and thus instead of 45 degree, it first writes 4 and then overwrite it with 5
+
+sol: add delay debounce for placeholderText
