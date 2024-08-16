@@ -9,6 +9,7 @@ import { OrthographicCamera } from '@react-three/drei/native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Icon  from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import InverseKinematics from './InverseKinematics';
 
 const CameraControl = ({cameraRef,direction}) =>{
   useFrame(()=>{
@@ -184,7 +185,6 @@ function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, 
 }
 
 function App() {
-
   useEffect(()=>{
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
 
@@ -258,7 +258,7 @@ function App() {
     }
   };
 
-  const handleTouchEnd= (event)=>{
+  const handleTouchEnd = (event)=>{
     console.log('touch ended')
     setDirection('')
   };
@@ -279,7 +279,7 @@ function App() {
         <Text className='m-2 bg-green-300 align-middle self-center text-lg' >Connectiong...</Text>
         <TouchableOpacity className='w-12 items-center' onPress={handleVisible} ><Icon name='edit' size={30} color='#900' className='m-2 center' /></TouchableOpacity>
       </View>
-
+      <InverseKinematics/>
       {/* Main column View */}
       <View className='flex flex-1 flex-row h-full mb-2'>
 
