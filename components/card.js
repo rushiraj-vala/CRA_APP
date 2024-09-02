@@ -8,14 +8,12 @@ const Card = ({title,imageName}) => {
 
   const navigation = useNavigation();
   
-  const imagePath = '../assets/images/'+imageName  ;
-
   let imageSource;
   let nextScreen;
 
   switch (title) {
     case 'UR10e':
-      imageSource = require('../assets/images/ur10e.png');
+      imageSource = require('../assets/images/ur10.png');
       nextScreen = 'UR10';
       break;
     case 'NAO':
@@ -26,11 +24,11 @@ const Card = ({title,imageName}) => {
         nextScreen = 'SCORBOT';
       break;
     case 'Turtlebot3':
-      imageSource = require('../assets/images/turtlebot3_waffle.png');
+      imageSource = require('../assets/images/TurtleBot3.png');
       nextScreen = 'Turtlebot3';
       break;
     case 'AI_Serbot':
-      imageSource = require('../assets/images/SerBot_PrimeX.png');
+      imageSource = require('../assets/images/AIoTSerbot.png');
       nextScreen = 'AI_Serbot';
       break;
     case 'Mechanical':
@@ -38,7 +36,7 @@ const Card = ({title,imageName}) => {
       nextScreen = 'MechanicalFacilities';
       break;
     case 'Electrical':
-      imageSource = require('../assets/images/electrical_tool.png');
+      imageSource = require('../assets/images/electrical.png');
       nextScreen = 'ElectricalFacilities';
       break;
     case 'Space':

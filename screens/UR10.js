@@ -10,47 +10,52 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Icon  from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import InverseKinematics from './InverseKinematics';
+import closeFormedIK from './closeFormedIK';
 
 const CameraControl = ({cameraRef,direction}) =>{
   useFrame(()=>{
     
     if(direction=='Left'){
       const xComp = cameraRef.current.position.x;
+      const yComp = cameraRef.current.position.y;
       const zComp = cameraRef.current.position.z;
       // console.log('xComp:',xComp,'zComp:',zComp);
       let theta = Math.atan2(zComp,xComp);
       // const mag = Math.sqrt((xComp*xComp)+(zComp*zComp));
-      const mag = 2.8284;
+      const mag = Math.sqrt(xComp*xComp+zComp*zComp);
       console.log('Old Theta:',theta);
       theta -= (0.08727*2);
       let newXComp=Math.cos(theta)*mag;
       let newZComp=Math.sin(theta)*mag;
       cameraRef.current.position.x=newXComp;
       cameraRef.current.position.z=newZComp;
+      cameraRef.current.position.y=yComp;
       console.log('Theta:',theta);
       // console.log('Xcomp:',newXComp);
     }
     
     if(direction=='Right'){
       const xComp = cameraRef.current.position.x;
+      const yComp = cameraRef.current.position.y;
       const zComp = cameraRef.current.position.z;
       // console.log('xComp:',xComp,'zComp:',zComp);
       let theta = Math.atan2(zComp,xComp);
       // const mag = Math.sqrt((xComp*xComp)+(zComp*zComp));
-      const mag = 2.8284;
+      const mag = Math.sqrt(xComp*xComp+zComp*zComp);
       console.log('Old Theta:',theta);
       theta += (0.08727*2);
       let newXComp=Math.cos(theta)*mag;
       let newZComp=Math.sin(theta)*mag;
       cameraRef.current.position.x=newXComp;
       cameraRef.current.position.z=newZComp;
+      cameraRef.current.position.y=yComp;
       console.log('Theta:',theta);
       // console.log('Xcomp:',newXComp);
     }
     
     if(cameraRef.current){
       // cameraRef.current.position.set(2,2,2);
-      cameraRef.current.lookAt(0,0.5,0);
+      cameraRef.current.lookAt(0,0,0);
     }
 
   });
@@ -73,13 +78,13 @@ function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, 
     if (grandparentRef.current && parentRef.current && child1Ref.current) {
       // Example: Set initial transformations for each level
       // Grandparent
-      grandparentRef.current.position.set(0, 0, 0);
+      grandparentRef.current.position.set(0, 0.1375/2, 0);
       grandparentRef.current.rotation.set(0, baseAngle*(Math.PI/180), 0);  //(0, -Math.PI/4, 0);
       grandparentRef.current.scale.set(1, 1, 1);
 
       // Parent
       parentRef.current.position.set(-0.135, 0.0432, 0);
-      parentRef.current.rotation.set(shoulderAngle*(Math.PI/180), 0, Math.PI/2);  //(-Math.PI/4, 0, Math.PI/2);
+      parentRef.current.rotation.set( (Math.PI/2)+shoulderAngle*(Math.PI/180), 0, Math.PI/2);  //(-Math.PI/4, 0, Math.PI/2);
       parentRef.current.scale.set(1, 1, 1);
 
       // console.log('Parent Ref Pos:',parentRef.current.position);
@@ -101,7 +106,7 @@ function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, 
       
       // child 4
       child4Ref.current.position.set(-0.067675, 0.285775, 0);
-      child4Ref.current.rotation.set(wrist1Angle*(Math.PI/180), 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
+      child4Ref.current.rotation.set((Math.PI/2)+wrist1Angle*(Math.PI/180), 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
       child4Ref.current.scale.set(1, 1, 1);
       
       // child 5
@@ -184,6 +189,32 @@ function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, 
   );
 }
 
+
+function TargetOrb({targetRef,X,Y,Z}) {
+  const target = targetRef;
+  
+  // Update transformations in the frame loop
+  useFrame(() => {
+    if (target.current) {
+      target.current.position.set(parseFloat(Y)/1000, parseFloat(Z)/1000, parseFloat(X)/1000);
+      target.current.rotation.set(0, 0, 0);  
+      target.current.scale.set(1, 1, 1);
+
+    }
+  });
+
+  return (
+    <group ref={target}>
+      {/* Grandparent Cylinder */}
+      <mesh>
+        <sphereGeometry args={[0.05,16,16]} />
+        <meshStandardMaterial color="red" />
+      </mesh>
+    </group>
+  );
+}
+
+
 function App() {
   useEffect(()=>{
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
@@ -195,18 +226,30 @@ function App() {
 
   const cameraRef = useRef();
 
+  const targetOrbRef = useRef();
+
+  const intervalRef = useRef(null);
+
   const[currTouchX,setCurrTouchX] = useState(0);
   const[startTouchX,setStartTouchX] = useState(0);
   const[direction,setDirection]=useState('');
   const[isVisible,setIsVisible]=useState(false);
   const[selectedTcpMenu,setSelectedTcpMenu]=useState('tcp_Pos');
+  const[selectedInputMenu,setSelectedInputMenu]=useState('ANGLE_INPUT');
 
   const[angle1,setAngle1]=useState('0');
-  const[angle2,setAngle2]=useState('0');
+  const[angle2,setAngle2]=useState('-90');
   const[angle3,setAngle3]=useState('0');
-  const[angle4,setAngle4]=useState('0');
+  const[angle4,setAngle4]=useState('-90');
   const[angle5,setAngle5]=useState('0');
   const[angle6,setAngle6]=useState('0');
+
+  const[tcpX,setTcpX]=useState('0');
+  const[tcpY,setTcpY]=useState('-291');
+  const[tcpZ,setTcpZ]=useState('1483');
+  const[tcpRX,setTcpRX]=useState('-90');
+  const[tcpRY,setTcpRY]=useState('0');
+  const[tcpRZ,setTcpRZ]=useState('0');
   
   const baseAngle = parseInt(angle1) || 0;
   const shoulderAngle = parseInt(angle2) || 0;
@@ -228,11 +271,23 @@ function App() {
       setAngle1(inputText);
     }else if(inputId==='angle6'){
       setAngle6(inputText);
+    }else if(inputId==='tcpX'){
+      setTcpX(inputText)
+    }else if(inputId==='tcpY'){
+      setTcpY(inputText)
+    }else if(inputId==='tcpZ'){
+      setTcpZ(inputText)
+    }else if(inputId==='tcpRX'){
+      setTcpRX(inputText)
+    }else if(inputId==='tcpRY'){
+      setTcpRY(inputText)
+    }else if(inputId==='tcpRZ'){
+      setTcpRZ(inputText)
     }
   }
 
   const debounceHandleTextChange = useCallback(
-    debounce(handleTextChangeAngle,500),
+    debounce(handleTextChangeAngle,1500),
     []
   );
 
@@ -264,22 +319,54 @@ function App() {
   };
 
   const handleVisible=(event)=>{
-    setIsVisible(!isVisible);
+    setIsVisible(!isVisible); 
   };
 
   const handleTcpMenu=(menuName)=>{
     setSelectedTcpMenu(menuName);
   };
 
+  const handleInputMenu=(menuName)=>{
+    setSelectedInputMenu(menuName);
+  };
+
+  const handleOrbMovePressIn=(direction)=>{
+
+    intervalRef.current= setInterval(()=>{
+      if(direction==='up'){
+        setTcpZ(prev =>(parseFloat(prev)+50).toString())
+      }else if(direction==='down'){
+        setTcpZ(prev =>(parseFloat(prev)-50).toString())
+      }else if(direction==='left'){
+        setTcpX(prev =>(parseFloat(prev)+50).toString())
+      }else if(direction==='right'){
+        setTcpX(prev =>(parseFloat(prev)-50).toString())
+      }else if(direction==='forward'){
+        setTcpY(prev =>(parseFloat(prev)+50).toString())
+      }else if(direction==='backward'){
+        setTcpY(prev =>(parseFloat(prev)-50).toString())
+      }
+    },500);
+  }
+
+  const handleOrbMovePressOut=()=>{
+    if (intervalRef.current){
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // closeFormedIK();
+
   return (
     // <GestureHandlerRootView style={{flex:1 }} >
     //   <GestureDetector gesture={panGesture} >
       <>
       <View className=" flex-row h-10 bg-blue-200 align-middle items-center justify-around" >
-        <Text className='m-2 bg-green-300 align-middle self-center text-lg' >Connectiong...</Text>
+        <Text className='m-2 bg-inherit align-middle self-center text-lg' >Connected to Virtual Device</Text>
         <TouchableOpacity className='w-12 items-center' onPress={handleVisible} ><Icon name='edit' size={30} color='#900' className='m-2 center' /></TouchableOpacity>
       </View>
-      <InverseKinematics/>
+
       {/* Main column View */}
       <View className='flex flex-1 flex-row h-full mb-2'>
 
@@ -300,7 +387,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 btransparent'>
                       {/* <Text>1</Text> */}
-                    <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' />
+                    <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('down')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -309,7 +396,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>3</Text> */}
-                      <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' />
+                      <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('up')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
                   </View>
 
@@ -320,7 +407,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>5</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('forward')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -331,7 +418,7 @@ function App() {
                   <View id='posConRow3' className='flex-1 flex-row'>
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>7</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('left')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -340,7 +427,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>9</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' />
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('right')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
                     </TouchableOpacity>
                   </View>
 
@@ -351,7 +438,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 flex-row bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>11</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' />
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('backward')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -366,48 +453,92 @@ function App() {
 
         {/* Middle Pane */}
           <View className='bg-gray-500 flex-1 justify-center'> 
-              <Text className=' bg-green-300  text-center' >3D Scene</Text>
+              {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
+
              {/*Canvas */}
             
-            {/* <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} >
-              <OrthographicCamera makeDefault zoom={180} position={[2,2,2]} ref={cameraRef}/>
+            <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
+              <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
               <CameraControl cameraRef={cameraRef} direction={direction} />
               <ambientLight intensity={1} />
               <gridHelper args={[2,5,'white','gray']} className="z-1"/>
               <CustomTransformations baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} className="z-2" />
-            </Canvas> */}
+            
+              <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
+            </Canvas>
            
           </View>
 
         {/* Right Pane */}
         <View className="h-full flex bg-white flex-col border-l-2 border-cyan-500 justify-stretch">
-          <View id='column1' className=" bg-white flex-1 flex-col m-3 mb-1 justify-around">
-            <View id="col1row1" className=" bg-inherit flex-row items-center m-1 align-middle ">
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">Base</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle1} onChangeText={(text)=>{debounceHandleTextChange(text,'angle1')}} className="w-20 h-7 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
+        <View id='input_menu' className='flex-row' >
+              <TouchableOpacity className='flex-1 bg-red-200' onPress={()=>{handleInputMenu('ANGLE_INPUT')}}>
+                <Text className='text-center text-base' >Angles</Text>    
+              </TouchableOpacity>
+              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{handleInputMenu('TCP_INPUT')}} >
+                <Text className='text-center text-base' >TCP</Text>  
+              </TouchableOpacity>
             </View>
-            <View id="col1row2" className=" bg-inherit flex-row items-center m-1 align-middle">
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">Shoulder</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle2} onChangeText={(text)=>{debounceHandleTextChange(text,'angle2')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
-            </View>
-            <View id="col1row3" className="bg-inherit flex-row items-center m-1" align-middle>
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Elbow</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle3} onChangeText={(text)=>{debounceHandleTextChange(text,'angle3')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
-            </View>
-            <View id="col2row1" className=" bg-inherit flex-row items-center m-1 align-middle">
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 1</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle4} onChangeText={(text)=>{debounceHandleTextChange(text,'angle4')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
-            </View>
-            <View id="col2row2" className="bg-inherit flex-row items-center m-1" align-middle>
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 2</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle5} onChangeText={(text)=>{debounceHandleTextChange(text,'angle5')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
-            </View>
-            <View id="col2row3" className=" bg-inherit flex-row items-center m-1 align-middle">
-              <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 3</Text>
-              <TextInput keyboardType='number-pad' placeholder={angle6} onChangeText={(text)=>{debounceHandleTextChange(text,'angle6')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500 font-medium border border-cyan-500"/>
-            </View>
-          </View>
 
+          {/* Angle Control Input */}
+        {selectedInputMenu=="ANGLE_INPUT" &&(
+          <View id='column1' className=" bg-white flex-1 flex-col m-3 mb-1 justify-around">
+          <View id="col1row1" className=" bg-inherit flex-row items-center m-1 align-middle ">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">Base</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle1} onChangeText={(text)=>{debounceHandleTextChange(text,'angle1')}} className="w-20 h-7 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col1row2" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">Shoulder</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle2} onChangeText={(text)=>{debounceHandleTextChange(text,'angle2')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col1row3" className="bg-inherit flex-row items-center m-1" align-middle>
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Elbow</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle3} onChangeText={(text)=>{debounceHandleTextChange(text,'angle3')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row1" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 1</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle4} onChangeText={(text)=>{debounceHandleTextChange(text,'angle4')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row2" className="bg-inherit flex-row items-center m-1" align-middle>
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 2</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle5} onChangeText={(text)=>{debounceHandleTextChange(text,'angle5')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row3" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Wrist 3</Text>
+            <TextInput keyboardType='number-pad' placeholder={angle6} onChangeText={(text)=>{debounceHandleTextChange(text,'angle6')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+        </View>
+
+        )}
+
+        {selectedInputMenu=="TCP_INPUT"&&(
+          <View id='column1' className=" bg-white flex-1 flex-col m-3 mb-1 justify-around">
+          <View id="col1row1" className=" bg-inherit flex-row items-center m-1 align-middle ">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">X</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpX} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpX')}} className="w-20 h-7 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col1row2" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white ">Y</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpY} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpY')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col1row3" className="bg-inherit flex-row items-center m-1" align-middle>
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">Z</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpZ} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpZ')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row1" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">RX</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpRX} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpRX')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row2" className="bg-inherit flex-row items-center m-1" align-middle>
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">RY</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpRY} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpRY')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+          <View id="col2row3" className=" bg-inherit flex-row items-center m-1 align-middle">
+            <Text className="w-20 h-7 pl-1 text-base font-medium bg-cyan-500 text-white">RZ</Text>
+            <TextInput keyboardType='number-pad' placeholder={tcpRZ} onChangeText={(text)=>{debounceHandleTextChange(text,'tcpRZ')}} className="w-20 bg-sky-50 ml-2 justify-center text-center text-cyan-500  font-medium border border-cyan-500"/>
+          </View>
+        </View>          
+        )}
         </View>
 
         <Modal
