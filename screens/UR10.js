@@ -11,6 +11,8 @@ import Icon  from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import InverseKinematics from './InverseKinematics';
 import closeFormedIK from './closeFormedIK';
+import japersIK from './InverseKinematics';
+import { pi } from 'mathjs';
 
 const CameraControl = ({cameraRef,direction}) =>{
   useFrame(()=>{
@@ -268,7 +270,7 @@ function App() {
     }else if(inputId==='angle4'){
       setAngle4(inputText);
     }else if(inputId==='angle5'){
-      setAngle1(inputText);
+      setAngle5(inputText);
     }else if(inputId==='angle6'){
       setAngle6(inputText);
     }else if(inputId==='tcpX'){
@@ -357,6 +359,15 @@ function App() {
   };
 
   // closeFormedIK();
+
+  const moveActuator=()=>{
+  }
+  
+  let ikAngles = japersIK([0.00065,-0.29071,1.484,-90,0,-180]);
+
+  for(i=0;i<8;i++){
+    console.log(ikAngles[i]);
+  }
 
   return (
     // <GestureHandlerRootView style={{flex:1 }} >
@@ -453,20 +464,20 @@ function App() {
 
         {/* Middle Pane */}
           <View className='bg-gray-500 flex-1 justify-center'> 
-              {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
+              <Text className=' bg-green-300  text-center' >3D Scene</Text>
 
              {/*Canvas */}
-            
-            <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
-              <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
-              <CameraControl cameraRef={cameraRef} direction={direction} />
-              <ambientLight intensity={1} />
-              <gridHelper args={[2,5,'white','gray']} className="z-1"/>
-              <CustomTransformations baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} className="z-2" />
-            
-              <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
-            </Canvas>
-           
+                {/*
+                    <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
+                      <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
+                      <CameraControl cameraRef={cameraRef} direction={direction} />
+                      <ambientLight intensity={1} />
+                      <gridHelper args={[2,5,'white','gray']} className="z-1"/>
+                      <CustomTransformations baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} className="z-2" />
+                    
+                      <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
+                    </Canvas>
+                */}
           </View>
 
         {/* Right Pane */}
