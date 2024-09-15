@@ -26,13 +26,13 @@ mat = np.matrix
 
 
 global d1, a2, a3, a7, d4, d5, d6
-d1 = 0.1273
-a2 = -0.612
-a3 = -0.5723
+d1 = 0.1807
+a2 = -0.6127
+a3 = -0.57155
 a7 = 0.075
-d4 = 0.163941
-d5 = 0.1157
-d6 = 0.0922
+d4 = 0.17415
+d5 = 0.11985
+d6 = 0.11655
 
 global d, a, alph
 
@@ -86,17 +86,22 @@ def HTrans(th, c):
 def invKine(desired_pos):  # T60
     th = mat(np.zeros((6, 8)))
     P_05 = (desired_pos * mat([0, 0, -d6, 1]).T-mat([0, 0, 0, 1]).T)
+    print('P05', P_05)
 
     # **** theta1 ****
 
-    psi = atan2(P_05[2-1, 0], P_05[1-1, 0])
-    phi = acos(d4 / sqrt(P_05[2-1, 0]*P_05[2-1, 0] +
-               P_05[1-1, 0]*P_05[1-1, 0]))
+    psi = atan2(P_05[1, 0], P_05[0, 0])
+    print('Psi:', psi)
+    phi = acos(d4 / sqrt(P_05[1, 0]*P_05[1, 0]
+                         + P_05[0, 0]*P_05[0, 0]))
+    print('Phi:', phi)
     # The two solutions for theta1 correspond to the shoulder
     # being either left or right
     th[0, 0:4] = pi/2 + psi + phi
     th[0, 4:8] = pi/2 + psi - phi
     th = th.real
+
+    print('Theta 1:', th[0, :])
 
     # **** theta5 ****
 
@@ -104,6 +109,7 @@ def invKine(desired_pos):  # T60
     for i in range(0, len(cl)):
         c = cl[i]
         T_10 = linalg.inv(AH(1, th, c))
+        print('T06: \n', desired_pos)
         T_16 = T_10 * desired_pos
         th[4, c:c+2] = + acos((T_16[2, 3]-d4)/d6)
         th[4, c+2:c+4] = - acos((T_16[2, 3]-d4)/d6)
@@ -114,6 +120,7 @@ def invKine(desired_pos):  # T60
     # theta6 is not well-defined when sin(theta5) = 0 or when T16(1,3), T16(2,3) = 0.
 
     cl = [0, 2, 4, 6]
+    print('Theta 5', th[4, :])
     for i in range(0, len(cl)):
         c = cl[i]
         T_10 = linalg.inv(AH(1, th, c))
@@ -161,12 +168,19 @@ def invKine(desired_pos):  # T60
     return th
 
 
-x = 0.0065
-y = -0.29171
-z = 1.487
-rx = -90*(pi/180)
+x = -1.183
+y = -0.291
+z = 0.060
+rx = 90*(pi/180)
 ry = 0*(pi/180)
-rz = -180*(pi/180)
+rz = 0.16*(pi/180)
+
+# x = 0.0
+# y = -0.291
+# z = 1.483
+# rx = -90.25*(pi/180)
+# ry = 0*(pi/180)
+# rz = -180*(pi/180)
 
 r1 = mat([[1, 0, 0],
           [0, math.cos(rx), -math.sin(rx)],
@@ -187,11 +201,13 @@ dPos = mat([[r[0, 0], r[0, 1], r[0, 2], x],
            [r[2, 0], r[2, 1], r[2, 2], z],
            [0, 0, 0, 1]])
 
-dPos[np.abs(dPos) < 0.001] = 0
+# dPos[np.abs(dPos) < 0.001] = 0
 print(dPos)
 
 res = invKine(dPos)
 res = res*(180/pi)
 res[np.abs(res) < 0.01] = 0
-res = np.ceil(res*10)/10
-print(res[:, 0])
+res = np.ceil(res*1000)/1000
+
+for i in range(6):
+    print('{:0.3f}'.format(res[i, 0]))

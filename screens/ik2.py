@@ -87,29 +87,36 @@ def forward_kinematic_solution(DH_matrix, edges=np.matrix([[0], [0], [0], [0], [
     return answer
 
 
-def inverse_kinematic_solution(DH_matrix, transform_matrix,):
+def inverse_kinematic_solution(DH_matrix, transform_matrix):
 
     theta = np.matrix(np.zeros((6, 8)))
     # theta 1
     T06 = transform_matrix
-
-    P05 = T06 * np.matrix([[0], [0], [-DH_matrix[5, 2]], [1]])
+    print('T06: ', T06)
+    P05 = T06 * np.matrix([[0.0], [0.0], [-DH_matrix[5, 2]], [1.0]])
+    print('P05: ', P05)
     psi = atan2(P05[1], P05[0])
+    print('psi:', psi)
     phi = acos((DH_matrix[1, 2] + DH_matrix[3, 2] +
                DH_matrix[2, 2]) / sqrt(P05[0] ** 2 + P05[1] ** 2))
-    theta[0, 0:4] = psi + phi + pi / 2
-    theta[0, 4:8] = psi - phi + pi / 2
+    print('phi', phi)
+    theta[0, 0:4] = round(psi + phi + pi / 2, 3)
+    theta[0, 4:8] = round(psi - phi + pi / 2, 3)
 
+    print('Theta 0', theta[0, :])
     # theta 5
     for i in {0, 4}:
         th5cos = (T06[0, 3] * sin(theta[0, i]) - T06[1, 3] * cos(theta[0, i]) - (
             DH_matrix[1, 2] + DH_matrix[3, 2] + DH_matrix[2, 2])) / DH_matrix[5, 2]
-        if 1 >= th5cos >= -1:
+        if 1 > th5cos > -1:
             th5 = acos(th5cos)
         else:
-            th5 = 0
-        theta[4, i:i + 2] = th5
-        theta[4, i + 2:i + 4] = -th5
+            th5 = 0.0
+
+        theta[4, i:i + 2] = round(th5, 2)
+        theta[4, i + 2:i + 4] = round(-th5, 2)
+    print('Theta 5', theta[4, :])
+
     # theta 6
     for i in {0, 2, 4, 6}:
         # if sin(theta[4, i]) == 0:
@@ -118,7 +125,9 @@ def inverse_kinematic_solution(DH_matrix, transform_matrix,):
         T60 = linalg.inv(T06)
         th = atan2((-T60[1, 0] * sin(theta[0, i]) + T60[1, 1] * cos(theta[0, i])),
                    (T60[0, 0] * sin(theta[0, i]) - T60[0, 1] * cos(theta[0, i])))
-        theta[5, i:i + 2] = th
+        theta[5, i:i + 2] = round(th, 2)
+
+    print('Theta 6:', theta[5])
 
     # theta 3
     for i in {0, 2, 4, 6}:
@@ -132,9 +141,9 @@ def inverse_kinematic_solution(DH_matrix, transform_matrix,):
         if 1 >= costh3 >= -1:
             th3 = acos(costh3)
         else:
-            th3 = 0
-        theta[2, i] = th3
-        theta[2, i + 1] = -th3
+            th3 = 0.0
+        theta[2, i] = round(th3, 2)
+        theta[2, i + 1] = round(-th3, 2)
 
     # theta 2,4
     for i in range(8):
@@ -144,10 +153,8 @@ def inverse_kinematic_solution(DH_matrix, transform_matrix,):
         T14 = linalg.inv(T01) * T06 * linalg.inv(T45 * T56)
         P13 = T14 * np.matrix([[0], [-DH_matrix[3, 2]], [0], [1]])
 
-        theta[1, i] = atan2(-P13[1], -P13[0]) - asin(
-            -DH_matrix[2, 0] * sin(theta[2, i]) /
-            sqrt(P13[0] ** 2 + P13[1] ** 2)
-        )
+        theta[1, i] = atan2(-P13[1], -P13[0]) - asin(-DH_matrix[2, 0]
+                                                     * sin(theta[2, i]) / sqrt(P13[0] ** 2 + P13[1] ** 2))
         T32 = linalg.inv(mat_transtorm_DH(DH_matrix, 3, theta[:, i]))
         T21 = linalg.inv(mat_transtorm_DH(DH_matrix, 2, theta[:, i]))
         T34 = T32 * T21 * T14
@@ -156,22 +163,39 @@ def inverse_kinematic_solution(DH_matrix, transform_matrix,):
 
 
 if __name__ == '__main__':
-    ed = np.matrix([[0.0001], [-1.570796326], [0.0001], [-1.570796326],
-                    [0.0001], [0.0001]])
+    ed = np.matrix([[0.000], [0.000], [0.000],
+                   [0.000], [0.000], [0.000]])
     print("Current angles")
     print(ed)
     transform = forward_kinematic_solution(DH_matrix_UR10e, ed)
-    print("Forward")
-    print(transform)
-    # transform = np.array([[-1, 0, 0, 0.00065],
-    #                       [0, 0, -1, -0.2907],
-    #                       [0, -1, 0, 1.484],
-    #                       [0, 0, 0, 1]])
+    # print("Forward")
+    # print(transform)
+    transform = np.array([[-1, 0.0, 0.0, 0],
+                          [0.0, 0.0, -1, -0.291],
+                          [0.0, -1, 0.0, 1.483],
+                          [0.0, 0.0, 0.0, 1]])
 
     print("Inverse")
     IKS = inverse_kinematic_solution(DH_matrix_UR10e, transform)
-    print(IKS)              # all solutions
-    print(IKS[:, 5]*(180/pi))        # first solution
+    print('IKS: ', IKS[:, 0]*(180/pi))              # all solutions
+    anggles = []
+    for i in range(1):
+        # print('{:f}'.format(IKS[0, i]*(180/pi)))        # first solution
+        # print('{:f}'.format(IKS[1, i]*(180/pi)))        # first solution
+        # print('{:f}'.format(IKS[2, i]*(180/pi)))        # first solution
+        # print('{:f}'.format(IKS[3, i]*(180/pi)))        # first solution
+        # print('{:f}'.format(IKS[4, i]*(180/pi)))        # first solution
+        # print('{:f}'.format(IKS[5, i]*(180/pi)))        # first solution
+        # print('\n\n')
+        anggles = np.matrix([[IKS[0, i]],        # first solution
+                             [IKS[1, i]],        # first solution
+                             [IKS[2, i]],        # first solution
+                             [IKS[3, i]],        # first solution
+                             [IKS[4, i]],        # first solution
+                             [IKS[5, i]]])      # first solution
+        transform = forward_kinematic_solution(DH_matrix_UR10e, anggles)
+        print("Forward")
+        print(transform[0, 3], transform[1, 3], transform[2, 3])
 
     # for i in range(6):
     #     print(IKS[:, i]*(180/pi))        # first solution

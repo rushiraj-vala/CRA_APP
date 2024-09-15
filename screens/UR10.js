@@ -12,7 +12,8 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import InverseKinematics from './InverseKinematics';
 import closeFormedIK from './closeFormedIK';
 import japersIK from './InverseKinematics';
-import { pi } from 'mathjs';
+import { ceil, pi } from 'mathjs';
+import forwarkKinmeatics from './forwarkKinmeatics';
 
 const CameraControl = ({cameraRef,direction}) =>{
   useFrame(()=>{
@@ -224,6 +225,7 @@ function App() {
     return () =>{
       ScreenOrientation.unlockAsync();
     };
+
   },[]);
 
   const cameraRef = useRef();
@@ -360,14 +362,99 @@ function App() {
 
   // closeFormedIK();
 
-  const moveActuator=()=>{
-  }
-  
-  let ikAngles = japersIK([0.00065,-0.29071,1.484,-90,0,-180]);
 
-  for(i=0;i<8;i++){
-    console.log(ikAngles[i]);
+  const moveActuator=(targetPos)=>{
+    /**
+     * Function takes the current position of end effector and 
+     * moves it a litte in direciton that is desire, 
+     * But first check if it is within reach: UR10e has 1300 mm reach
+     * calculate all the posible 8 states, and find which one is the nearest to current state
+     */
+    
+    console.log('Array kya hua tereko...')
+
+    // Need current move current state
+    let currentAngles = [angle1,angle2,angle3,angle4,angle5,angle6]
+    let currentTransf = [tcpX,tcpY,tcpZ,tcpRX,tcpRY,tcpRZ]
+
+    currentAngles = currentAngles.map(item=>parseFloat(item));
+    currentTransf = currentTransf.map(item=>parseFloat(item));
+
+    let targetTransf = currentTransf;
+    // Either moving up
+    targetTransf[2]+=0.01
+    // Either moving down
+    targetTransf[2]-=0.01
+    
+    // Either moving left
+    targetTransf[1]+=0.01
+    // Either moving right
+    targetTransf[1]-=0.01
+    
+    // Either moving forward
+    targetTransf[0]+=0.01
+    // Either moving backward
+    targetTransf[0]-=0.01
+
+    // horizontal home position
+    let ikAngles = japersIK([-1.183,-0.291,0.06,90,0,0.16]);
+    //vertical Home position
+    // let ikAngles = japersIK([0,-0.291,1.483,-90.0,0.0,-180]);
+   
+    // let ikAngles = japersIK(targetPos);
+    
+    for(i=0;i<8;i++){
+      let result = ikAngles[i]
+      result = result.map(value => ceil(value*100)/100);
+      console.log('i:',i+1);
+      console.log(result);
+    } 
+
+    let result = ikAngles[2].map(value => ceil(value*100)/100);
+
+    setAngle1(result[0].toString());
+    setAngle2(result[1].toString());
+    setAngle3(result[2].toString());
+    setAngle4(result[3].toString());
+    setAngle5(result[4].toString());
+    setAngle6(result[5].toString());
+
+    // Calculate forward dynamics based on new angles
+    let newTransf = forwarkKinmeatics(result);
+    console.log('1 New XYZ:', newTransf);
+    
+    result = ikAngles[1].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('2 New XYZ:', newTransf);
+
+    result = ikAngles[2].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('3 New XYZ:', newTransf);
+
+    result = ikAngles[3].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('4 New XYZ:', newTransf);
+
+    result = ikAngles[4].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('5 New XYZ:', newTransf);
+
+    result = ikAngles[5].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('6 New XYZ:', newTransf);
+
+    result = ikAngles[6].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('7 New XYZ:', newTransf);
+
+
+    result = ikAngles[7].map(value => ceil(value*100)/100);
+    newTransf = forwarkKinmeatics(result);
+    console.log('8 New XYZ:', newTransf);
+
+    console.log('------------------New Move-----------------')
   }
+
 
   return (
     // <GestureHandlerRootView style={{flex:1 }} >
@@ -387,7 +474,7 @@ function App() {
               <TouchableOpacity className='flex-1 bg-red-200' onPress={()=>{handleTcpMenu('tcp_Pos')}}>
                 <Text className='text-center text-base' >Pos</Text>    
               </TouchableOpacity>
-              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{handleTcpMenu('tcp_Orn')}} >
+              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{moveActuator()}} >
                 <Text className='text-center text-base' >Orn</Text>  
               </TouchableOpacity>
             </View>
@@ -464,10 +551,10 @@ function App() {
 
         {/* Middle Pane */}
           <View className='bg-gray-500 flex-1 justify-center'> 
-              <Text className=' bg-green-300  text-center' >3D Scene</Text>
+              {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
 
              {/*Canvas */}
-                {/*
+                
                     <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
                       <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
                       <CameraControl cameraRef={cameraRef} direction={direction} />
@@ -477,7 +564,7 @@ function App() {
                     
                       <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
                     </Canvas>
-                */}
+               
           </View>
 
         {/* Right Pane */}

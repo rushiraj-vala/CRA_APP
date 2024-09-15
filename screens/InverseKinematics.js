@@ -410,7 +410,7 @@ const OhioInverseKinematics =(x,y,z,alpha,beta,gamma)=>{
 
 
 const mat_transf_matrox = (n,theta)=>{
-
+    n = n-1
     let d = [0.1807,
      0,
      0,
@@ -432,31 +432,31 @@ const mat_transf_matrox = (n,theta)=>{
         -pi/2.0,
         0
     ];
-
-    angle = theta[n];
-    let t_z_theta = [[cos(angle),-sin(angle),0,0],
-                     [sin(angle),cos(angle),0,0],
-                     [0,0,1,0],
-                     [0,0,0,1]];
-
+    
     let t_zd = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
     t_zd[2][3]=d[n];
 
     let t_xa = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]];
     t_xa[0][3] = a[n]
+    angle = theta[n];
+    let r_z_theta = [[cos(angle),-sin(angle),0,0],
+                     [sin(angle),cos(angle),0,0],
+                     [0,0,1,0],
+                     [0,0,0,1]];
+
 
     alphaValue=alpha[n];
-    let t_x_alpha= [[1,0,0,0],
+    let r_x_alpha= [[1,0,0,0],
                   [0,cos(alphaValue),-sin(alphaValue),0],
                   [0,sin(alphaValue),cos(alphaValue),0],
                   [0,0,0,1]]
 
-    transf = multiply(t_z_theta,multiply(t_zd,multiply(t_xa,t_x_alpha)));
+    transf = multiply(t_zd,multiply(r_z_theta,multiply(t_xa,r_x_alpha)));
     return transf;
 };
 
 export default function japersIK(target_Pos){
-
+    console.log('HEYYYYYYYYYYYYY')
     let d1 = 0.1807;
     let d2 = 0;
     let d3 = 0;
@@ -488,45 +488,63 @@ export default function japersIK(target_Pos){
 
     R = multiply(RotZ,multiply(RotY,RotX));
 
+    // R = R.map(row =>(
+    //     row.map(value => value > 0.999 ? 1 : value)
+    // ))
+
+    // R = R.map(row =>(
+    //     row.map(value => value < -0.999 ? -1 : value)
+    // ))
+
+    // R = R.map(row =>(
+    //     row.map(value => abs(value)<=0.0001 ? 0 : value)
+    // ))
+
     let T06 = [[R[0][0],R[0][1],R[0][2],x],
                [R[1][0],R[1][1],R[1][2],y],
                [R[2][0],R[2][1],R[2][2],z],
                [0,0,0,1]];
 
     T06 = T06.map(row=>
-        row.map(value => abs(value)<0.0001 ? 0.0 : value)
+        row.map(value => abs(value)<0.001 ? 0.0 : value)
     )
 
-    console.log('T06:',T06);
 
+    //  Theta 1 ------------
 
     // P05 = T06 * [0,0,-d6,1]
-    P05 = multiply(T06,[[0],[0],[-d6],[1]])
-    psi = atan2(P05[1],P05[0]);
-    phi = acos((d2 + d3 + d2)/(sqrt(P05[1]*P05[1]+P05[0]*P05[0])));
+    P05 = multiply(T06,[[0],[0],[-d6],[1]])  
+    psi = atan2(P05[1][0],P05[0][0]);
+    phi = acos(d4/(sqrt(P05[1]*P05[1]+P05[0]*P05[0])));
 
-    // Assign values to thetas ------------- Find A Better way to do it
+
+    // Assign values to thetas , Find A Better way to do it
     thetas[0][0] = psi + phi + pi/2;
     thetas[0][1] = psi + phi + pi/2;
     thetas[0][2] = psi + phi + pi/2;
     thetas[0][3] = psi + phi + pi/2;
     
-    thetas[0][0] = psi - phi + pi/2;
-    thetas[0][1] = psi - phi + pi/2;
-    thetas[0][2] = psi - phi + pi/2;
-    thetas[0][3] = psi - phi + pi/2;
+    thetas[0][4] = psi - phi + pi/2;
+    thetas[0][5] = psi - phi + pi/2;
+    thetas[0][6] = psi - phi + pi/2;
+    thetas[0][7] = psi - phi + pi/2;
 
-    // theta5
+    // theta 5 -------------------------------------
     for(let i of [0,4]){
-        let angle = thetas[0][i]
-        let th5cos = ( T06[0][3] * sin(angle) - T06[1][3] * cos(angle)-(d2+d4+d3))/d6
-        let th5 = 0;
-        if (1>=th5cos>=-1){
-            th5 = acos(th5cos)
-        }else{
-            th5=0
-        }
+        // let angle = thetas[0][i]
+        // let th5cos = ( T06[0][3] * sin(angle) - T06[1][3] * cos(angle)-(d2+d4+d3))/d6
+        // let th5 = 0;
+        // if (1>=th5cos>=-1){
+        //     th5 = acos(th5cos)
+        // }else{
+        //     th5=0
+        // }
 
+        let thetasLocal =  [thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]];
+        T10 = inv(mat_transf_matrox(1,thetasLocal));
+        T16 = multiply(T10,T06);
+        tvalue = T16[2][3];
+        th5 = acos((tvalue-d4)/d6) 
         th5 = re(th5);
 
         thetas[4][i]= th5;
@@ -536,24 +554,33 @@ export default function japersIK(target_Pos){
 
     }
 
+    
     // theta 6 
+    console.log('Theta5',[thetas[4][0],thetas[4][1],thetas[4][2],thetas[4][3],thetas[4][4],thetas[4][5],thetas[4][6],thetas[4][7]])
+    thetas[4][0] = -0.1;
     for(let i of [0,2,4,6]){
-        let angle = thetas[0][i];
-        let T60 = inv(T06);
-        let th6 = atan2((-T60[1][0]*sin(angle) + T60[1][1]*cos(angle)),
-                   (T60[0][0]*sin(angle) - T60[0][1]*cos(angle)));
+        let angle5 = thetas[4][i];
+        let thetasLocal =  [thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]]
+        let T10 = inv(mat_transf_matrox(1,thetasLocal))
+        let T61 = inv(multiply(T10,T06));
 
+        //  Old way 
+        // let th6 = atan2((-T60[1][0]*sin(angle) + T60[1][1]*cos(angle)),
+        //            (T60[0][0]*sin(angle) - T60[0][1]*cos(angle)));
+        let th6 = atan2((-T61[1][2]/sin(angle5)),(T61[0][2]/sin(angle5)))
+        
         th6 = re(th6);
         thetas[5][i]=th6;
         thetas[5][i+1]=th6;
+
     }
 
     // theta 3 
     for(let i of [0,2,4,6]){
         thetasLocal =  [thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]]
-        let T01 = mat_transf_matrox(0,thetasLocal); 
-        let T45 = mat_transf_matrox(4,thetasLocal); 
-        let T56 = mat_transf_matrox(5,thetasLocal); 
+        let T01 = mat_transf_matrox(1,thetasLocal); 
+        let T45 = mat_transf_matrox(5,thetasLocal); 
+        let T56 = mat_transf_matrox(6,thetasLocal); 
 
         let T14 = multiply(inv(T01),multiply(T06,inv(multiply(T45,T56))));
 
@@ -567,6 +594,7 @@ export default function japersIK(target_Pos){
         }else{
             th3 = 0
         }
+
         th3 = re(th3);
         thetas[2][i] = th3;
         thetas[2][i+1] = -th3;
@@ -575,9 +603,9 @@ export default function japersIK(target_Pos){
     //  theta 2,4
     for(i=0;i<8;i++){
         thetasLocal =  [thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]]
-        let T01 = mat_transf_matrox(0,thetasLocal); 
-        let T45 = mat_transf_matrox(4,thetasLocal); 
-        let T56 = mat_transf_matrox(5,thetasLocal); 
+        let T01 = mat_transf_matrox(1,thetasLocal); 
+        let T45 = mat_transf_matrox(5,thetasLocal); 
+        let T56 = mat_transf_matrox(6,thetasLocal); 
 
         let T14 = multiply(inv(T01),multiply(T06,inv(multiply(T45,T56))));
 
@@ -588,7 +616,7 @@ export default function japersIK(target_Pos){
         let angle = thetas[2][i];
         let numer = -a3 * sin(angle);
         let theta1 = a - asin( numer / denom );
-
+        theta1 = re(theta1);
         thetas[1][i] = theta1;
 
         thetasLocal =  [thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]]
@@ -598,14 +626,16 @@ export default function japersIK(target_Pos){
         thetas[3][i] = atan2(T34[1][0],T34[0][0]);
     }
 
-    let n = 4;
+    let n = 0;
 
     angles=[];
     for(i=0;i<8;i++){
-        angles[i]=[thetas[0][i],thetas[1][i],thetas[2][i],thetas[3][i],thetas[4][i],thetas[5][i]];
+        angles[i]=[thetas[0][i]*(180/pi),thetas[1][i]*(180/pi),thetas[2][i]*(180/pi),thetas[3][i]*(180/pi),thetas[4][i]*(180/pi),thetas[5][i]*(180/pi)];
     }
-
+    console.log('Thetas:\n',[thetas[0][0]*(180/pi),thetas[1][0]*(180/pi),thetas[2][0]*(180/pi),thetas[3][0]*(180/pi),thetas[4][0]*(180/pi),thetas[5][0]*(180/pi)])
+    console.log('angles:\n',angles[0])
     angles = angles.map(row => row.map(value => parseFloat(value)));
+    console.log('angles:\n',angles[0])
 
     return angles;
 
@@ -617,6 +647,8 @@ export default function japersIK(target_Pos){
 
 //UR10e
 // export default OhioInverseKinematics(-1.183,-0.291,0.694,90,0,0);
+
+// export function forwardKinematics
 
 let T = [[-1,0,0,0.0065],
          [0,0,-1,-0.2907],
