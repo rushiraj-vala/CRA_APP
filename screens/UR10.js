@@ -9,10 +9,10 @@ import { OrthographicCamera } from '@react-three/drei/native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Icon  from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import InverseKinematics from './InverseKinematics';
+import InverseKinematics, { newJasperIk } from './InverseKinematics';
 import closeFormedIK from './closeFormedIK';
 import japersIK from './InverseKinematics';
-import { ceil, pi } from 'mathjs';
+import { ceil, min, norm, pi, sqrt } from 'mathjs';
 import forwarkKinmeatics from './forwarkKinmeatics';
 
 const CameraControl = ({cameraRef,direction}) =>{
@@ -363,15 +363,17 @@ function App() {
   // closeFormedIK();
 
 
-  const moveActuator=(targetPos)=>{
+
+  const moveActuator=(direction)=>{
     /**
      * Function takes the current position of end effector and 
      * moves it a litte in direciton that is desire, 
      * But first check if it is within reach: UR10e has 1300 mm reach
      * calculate all the posible 8 states, and find which one is the nearest to current state
-     */
-    
-    console.log('Array kya hua tereko...')
+     * To make motion smooth make the robot move in that direction for
+     *    a Long press:  a large definite step, animate to target postion, stop if reach or press-up in that case retain last angle positions
+     *    a short press: move a very small step
+     */   
 
     // Need current move current state
     let currentAngles = [angle1,angle2,angle3,angle4,angle5,angle6]
@@ -381,37 +383,113 @@ function App() {
     currentTransf = currentTransf.map(item=>parseFloat(item));
 
     let targetTransf = currentTransf;
-    // Either moving up
-    targetTransf[2]+=0.01
-    // Either moving down
-    targetTransf[2]-=0.01
-    
-    // Either moving left
-    targetTransf[1]+=0.01
-    // Either moving right
-    targetTransf[1]-=0.01
-    
-    // Either moving forward
-    targetTransf[0]+=0.01
-    // Either moving backward
-    targetTransf[0]-=0.01
 
-    // horizontal home position
-    let ikAngles = japersIK([-1.183,-0.291,0.06,90,0,0.16]);
-    //vertical Home position
-    // let ikAngles = japersIK([0,-0.291,1.483,-90.0,0.0,-180]);
-   
-    // let ikAngles = japersIK(targetPos);
+    console.log('Prev Target:',targetTransf);
+    switch (direction) {
+      case 'up':
+            // Either moving up
+            targetTransf[2]+=100;  
+            break;
+      case 'down':
+            // Either moving up
+            targetTransf[2]-=70;  
+            break;
+      case 'left':
+            // Either moving up
+            targetTransf[1]+=100;  
+            break;
+      case 'right':
+            // Either moving up
+            targetTransf[1]-=100;  
+            break;
+      case 'forward':
+            // Either moving up
+            targetTransf[0]+=100;  
+            break;
+      case 'backward':
+            // Either moving up
+            targetTransf[0]-=100;  
+            break;    
+      default:
+        break;
+    }
+
+
+    console.log('Target:',targetTransf);
+
+    console.log('Target norm:',norm([targetTransf[0],targetTransf[1],targetTransf[2]]))
+
+    //Check if the target
+    if(norm([targetTransf[0],targetTransf[1],targetTransf[2]])>1520){
+      console.log('Target pos out of reach')
+      return;
+    }
+    
+    console.log('------------------New Move-----------------')
+
+    x = targetTransf[0]/1000;
+    y = targetTransf[1]/1000;
+    z = targetTransf[2]/1000;
+
+    ikAngles = newJasperIk([x,y,z,-90.0,0.0,-180])
+
+    // Go through each result and find the nearest solution to true value
+    bestResult = []
+    bestDistance = Infinity;
+    bestTransf = [];
+
     
     for(i=0;i<8;i++){
-      let result = ikAngles[i]
-      result = result.map(value => ceil(value*100)/100);
-      console.log('i:',i+1);
-      console.log(result);
-    } 
+      let result = ikAngles[i].map(value => ceil(value*100)/100);
+      
+      let newTransf = forwarkKinmeatics(result);
+      
+      let targetDistance = sqrt((x-newTransf[0])*(x-newTransf[0]) + (y-newTransf[1])*(y-newTransf[1]) + (z-newTransf[2])*(z-newTransf[2]));
+      
+      if(targetDistance<bestDistance){
+        bestResult=result;
+        bestDistance = targetDistance;
+        bestTransf = newTransf;
+      }      
+      
+    }
 
-    let result = ikAngles[2].map(value => ceil(value*100)/100);
+    let result = ikAngles[7].map(value => ceil(value*100)/100);
+    
+    // let bestNorm=Infinity;
+    // let nearestAngle = []
+    // 
+    // 
+    // for(j=0;j<8;j++){
+// 
+    //   let euclidDistanceBetweenResults = new Array(6).fill(0);
+      // 
+    //   let result = ikAngles[j].map(value => ceil(value*100)/100);
+// 
+    //   for(i=0;i<6;i++){
+    //     euclidDistanceBetweenResults[i]=result[i]-currentAngles[i];
+// 
+    //   }
+    //   console.log('Angles:',result);
+    //   console.log('norm',norm(euclidDistanceBetweenResults))
+    //   if (norm(euclidDistanceBetweenResults)<bestNorm){
+    //     console.log('You were here')
+    //     bestNorm = euclidDistanceBetweenResults;
+    //     nearestAngle = result;
+    //   }
+// 
+    // }
+    // 
+    // console.log('New Best Angles:',bestResult);
+    // console.log('New Best Pos:',bestTransf);
+    // result = bestResult;
+    // 
+    // console.log('Nearese Angles',nearestAngle);
+    // let bestTransf = forwarkKinmeatics(nearestAngle);
+    // console.log('Nearest transfo:',bestTransf);
 
+
+    // Set Angles
     setAngle1(result[0].toString());
     setAngle2(result[1].toString());
     setAngle3(result[2].toString());
@@ -419,40 +497,14 @@ function App() {
     setAngle5(result[4].toString());
     setAngle6(result[5].toString());
 
-    // Calculate forward dynamics based on new angles
-    let newTransf = forwarkKinmeatics(result);
-    console.log('1 New XYZ:', newTransf);
-    
-    result = ikAngles[1].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('2 New XYZ:', newTransf);
+    // Set TCP
+    setTcpX((bestTransf[0]*1000).toString());
+    setTcpY((bestTransf[1]*1000).toString());
+    setTcpZ((bestTransf[2]*1000).toString());
+    setTcpRX(bestTransf[3].toString());
+    setTcpRY(bestTransf[4].toString());
+    setTcpRZ(bestTransf[5].toString());
 
-    result = ikAngles[2].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('3 New XYZ:', newTransf);
-
-    result = ikAngles[3].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('4 New XYZ:', newTransf);
-
-    result = ikAngles[4].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('5 New XYZ:', newTransf);
-
-    result = ikAngles[5].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('6 New XYZ:', newTransf);
-
-    result = ikAngles[6].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('7 New XYZ:', newTransf);
-
-
-    result = ikAngles[7].map(value => ceil(value*100)/100);
-    newTransf = forwarkKinmeatics(result);
-    console.log('8 New XYZ:', newTransf);
-
-    console.log('------------------New Move-----------------')
   }
 
 
@@ -474,7 +526,7 @@ function App() {
               <TouchableOpacity className='flex-1 bg-red-200' onPress={()=>{handleTcpMenu('tcp_Pos')}}>
                 <Text className='text-center text-base' >Pos</Text>    
               </TouchableOpacity>
-              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{moveActuator()}} >
+              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{moveActuator('down')}} >
                 <Text className='text-center text-base' >Orn</Text>  
               </TouchableOpacity>
             </View>
@@ -551,10 +603,11 @@ function App() {
 
         {/* Middle Pane */}
           <View className='bg-gray-500 flex-1 justify-center'> 
-              {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
+            {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
 
              {/*Canvas */}
                 
+              
                     <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
                       <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
                       <CameraControl cameraRef={cameraRef} direction={direction} />
@@ -564,6 +617,7 @@ function App() {
                     
                       <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
                     </Canvas>
+             
                
           </View>
 
