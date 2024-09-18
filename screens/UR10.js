@@ -388,27 +388,27 @@ function App() {
     switch (direction) {
       case 'up':
             // Either moving up
-            targetTransf[2]+=100;  
+            targetTransf[2]+=50;  
             break;
       case 'down':
             // Either moving up
-            targetTransf[2]-=70;  
+            targetTransf[2]-=50;  
             break;
       case 'left':
             // Either moving up
-            targetTransf[1]+=100;  
+            targetTransf[1]+=50;  
             break;
       case 'right':
             // Either moving up
-            targetTransf[1]-=100;  
+            targetTransf[1]-=50;  
             break;
       case 'forward':
             // Either moving up
-            targetTransf[0]+=100;  
+            targetTransf[0]+=50;  
             break;
       case 'backward':
             // Either moving up
-            targetTransf[0]-=100;  
+            targetTransf[0]-=50;  
             break;    
       default:
         break;
@@ -425,8 +425,6 @@ function App() {
       return;
     }
     
-    console.log('------------------New Move-----------------')
-
     x = targetTransf[0]/1000;
     y = targetTransf[1]/1000;
     z = targetTransf[2]/1000;
@@ -456,39 +454,6 @@ function App() {
 
     let result = ikAngles[7].map(value => ceil(value*100)/100);
     
-    // let bestNorm=Infinity;
-    // let nearestAngle = []
-    // 
-    // 
-    // for(j=0;j<8;j++){
-// 
-    //   let euclidDistanceBetweenResults = new Array(6).fill(0);
-      // 
-    //   let result = ikAngles[j].map(value => ceil(value*100)/100);
-// 
-    //   for(i=0;i<6;i++){
-    //     euclidDistanceBetweenResults[i]=result[i]-currentAngles[i];
-// 
-    //   }
-    //   console.log('Angles:',result);
-    //   console.log('norm',norm(euclidDistanceBetweenResults))
-    //   if (norm(euclidDistanceBetweenResults)<bestNorm){
-    //     console.log('You were here')
-    //     bestNorm = euclidDistanceBetweenResults;
-    //     nearestAngle = result;
-    //   }
-// 
-    // }
-    // 
-    // console.log('New Best Angles:',bestResult);
-    // console.log('New Best Pos:',bestTransf);
-    // result = bestResult;
-    // 
-    // console.log('Nearese Angles',nearestAngle);
-    // let bestTransf = forwarkKinmeatics(nearestAngle);
-    // console.log('Nearest transfo:',bestTransf);
-
-
     // Set Angles
     setAngle1(result[0].toString());
     setAngle2(result[1].toString());
@@ -526,7 +491,7 @@ function App() {
               <TouchableOpacity className='flex-1 bg-red-200' onPress={()=>{handleTcpMenu('tcp_Pos')}}>
                 <Text className='text-center text-base' >Pos</Text>    
               </TouchableOpacity>
-              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{moveActuator('down')}} >
+              <TouchableOpacity className='flex-1 bg-green-200' onPress={()=>{handleInputMenu('tcp_Orn')}} >
                 <Text className='text-center text-base' >Orn</Text>  
               </TouchableOpacity>
             </View>
@@ -537,7 +502,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 btransparent'>
                       {/* <Text>1</Text> */}
-                    <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('down')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                    <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('up')}} onTouchStart={()=>{handleOrbMovePressIn('down')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -546,7 +511,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>3</Text> */}
-                      <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('up')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('down')}} onTouchStart={()=>{handleOrbMovePressIn('up')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
                   </View>
 
@@ -557,7 +522,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>5</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('forward')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('forward')}} onTouchStart={()=>{handleOrbMovePressIn('forward')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -568,7 +533,7 @@ function App() {
                   <View id='posConRow3' className='flex-1 flex-row'>
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>7</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('left')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('left')}} onTouchStart={()=>{handleOrbMovePressIn('left')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -577,7 +542,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>9</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('right')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('right')}} onTouchStart={()=>{handleOrbMovePressIn('right')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
                     </TouchableOpacity>
                   </View>
 
@@ -588,7 +553,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 flex-row bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>11</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onTouchStart={()=>{handleOrbMovePressIn('backward')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('backward')}} onTouchStart={()=>{handleOrbMovePressIn('backward')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
