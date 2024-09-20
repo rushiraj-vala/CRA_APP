@@ -12,7 +12,7 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import InverseKinematics, { newJasperIk } from './InverseKinematics';
 import closeFormedIK from './closeFormedIK';
 import japersIK from './InverseKinematics';
-import { ceil, min, norm, pi, sqrt } from 'mathjs';
+import { abs, boolean, ceil, isString, min, norm, pi, sqrt } from 'mathjs';
 import forwarkKinmeatics from './forwarkKinmeatics';
 
 const CameraControl = ({cameraRef,direction}) =>{
@@ -66,64 +66,225 @@ const CameraControl = ({cameraRef,direction}) =>{
   return null;
 };
 
-function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, wrist2Angle, wrist3Angle}) {
-  const grandparentRef = useRef();
-  const parentRef = useRef();
-  const child1Ref = useRef();
-  const child2Ref = useRef();
-  const child3Ref = useRef();
-  const child4Ref = useRef();
-  const child5Ref = useRef();
-  const child6Ref = useRef();
-  
+function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link5Ref,link6Ref,link7Ref,baseAngle,shoulderAngle,elbowAngle,wrist1Angle, wrist2Angle, wrist3Angle,targetAngle1,targetAngle2,targetAngle3,targetAngle4,targetAngle5,targetAngle6, setAngle1,setAngle2,setAngle3,setAngle4,setAngle5,setAngle6, isMoving, setIsMoving, isStopping, setIsStopping}) {
+
+  const grandparentRef = baseRef;
+  const parentRef = link1Ref;
+  const child1Ref = link2Ref;
+  const child2Ref = link3Ref;
+  const child3Ref = link4Ref;
+  const child4Ref = link5Ref;
+  const child5Ref = link6Ref;
+  const child6Ref = link7Ref;
+
+  baseAngle = baseAngle*(Math.PI/180);  
+  shoulderAngle = shoulderAngle*(Math.PI/180);
+  elbowAngle =  elbowAngle*(Math.PI/180);
+  wrist1Angle = wrist1Angle*(Math.PI/180);
+  wrist2Angle = wrist2Angle*(Math.PI/180);
+  wrist3Angle = wrist3Angle*(Math.PI/180)
+
+  const lastAngle1 = useRef(0);
+  const lastAngle2 = useRef(0);
+  const lastAngle3 = useRef(0);
+  const lastAngle4 = useRef(0);
+  const lastAngle5 = useRef(0);
+  const lastAngle6 = useRef(0);
+
+  let hasReachAngle1 = false;
+  let hasReachAngle2 = false;
+  let hasReachAngle3 = false;
+  let hasReachAngle4 = false;
+  let hasReachAngle5 = false;
+  let hasReachAngle6 = false;
+
+  console.log('controlling...');
   // Update transformations in the frame loop
-  useFrame(() => {
+  useEffect(() => {
+    console.log('use effect was called..')
     if (grandparentRef.current && parentRef.current && child1Ref.current) {
+
       // Example: Set initial transformations for each level
-      // Grandparent
-      grandparentRef.current.position.set(0, 0.1375/2, 0);
-      grandparentRef.current.rotation.set(0, baseAngle*(Math.PI/180), 0);  //(0, -Math.PI/4, 0);
-      grandparentRef.current.scale.set(1, 1, 1);
+    // Grandparent
+    grandparentRef.current.position.set(0, 0.1375/2, 0);
+    grandparentRef.current.rotation.set(0, baseAngle, 0);  //(0, -Math.PI/4, 0);
+    grandparentRef.current.scale.set(1, 1, 1);
 
-      // Parent
-      parentRef.current.position.set(-0.135, 0.0432, 0);
-      parentRef.current.rotation.set( (Math.PI/2)+shoulderAngle*(Math.PI/180), 0, Math.PI/2);  //(-Math.PI/4, 0, Math.PI/2);
-      parentRef.current.scale.set(1, 1, 1);
+    // Parent
+    parentRef.current.position.set(-0.135, 0.0432, 0);
+    parentRef.current.rotation.set( (Math.PI/2)+shoulderAngle, 0, Math.PI/2);  //(-Math.PI/4, 0, Math.PI/2);
+    parentRef.current.scale.set(1, 1, 1);
 
-      // console.log('Parent Ref Pos:',parentRef.current.position);
+    // console.log('Parent Ref Pos:',parentRef.current.position);
 
-      // Child 1 , No movement
-      child1Ref.current.position.set(0.30635, 0.041, 0);
-      child1Ref.current.rotation.set(0, 0, -Math.PI/2);
-      child1Ref.current.scale.set(1, 1, 1);
+    // Child 1 , No movement
+    child1Ref.current.position.set(0.30635, 0.041, 0);
+    child1Ref.current.rotation.set(0, 0, -Math.PI/2);
+    child1Ref.current.scale.set(1, 1, 1);
 
-      // Child 2
-      child2Ref.current.position.set(0.0686, 0.30635, 0);
-      child2Ref.current.rotation.set(elbowAngle*(Math.PI/180), 0, Math.PI/2); //(Math.PI/4,0,Math.PI/2)
-      child2Ref.current.scale.set(1, 1, 1);
+    // Child 2
+    child2Ref.current.position.set(0.0686, 0.30635, 0);
+    child2Ref.current.rotation.set(elbowAngle, 0, Math.PI/2); //(Math.PI/4,0,Math.PI/2)
+    child2Ref.current.scale.set(1, 1, 1);
 
-      // Child 3 , No Movement
-      child3Ref.current.position.set(0.285775, -0.0686, 0);
-      child3Ref.current.rotation.set(0, 0, -Math.PI/2);
-      child3Ref.current.scale.set(1, 1, 1);
+    // Child 3 , No Movement
+    child3Ref.current.position.set(0.285775, -0.0686, 0);
+    child3Ref.current.rotation.set(0, 0, -Math.PI/2);
+    child3Ref.current.scale.set(1, 1, 1);
+    
+    // child 4
+    child4Ref.current.position.set(-0.067675, 0.285775, 0);
+    child4Ref.current.rotation.set((Math.PI/2)+wrist1Angle, 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
+    child4Ref.current.scale.set(1, 1, 1);
+    
+    // child 5
+    child5Ref.current.position.set(0.043, 0.067675, 0);
+    child5Ref.current.rotation.set(wrist2Angle, 0, -Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
+    child5Ref.current.scale.set(1, 1, 1);
+    
+    // child 6
+    child6Ref.current.position.set(-0.037825, 0.131, 0);
+    child6Ref.current.rotation.set(wrist3Angle, 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
+    child6Ref.current.scale.set(1, 1, 1);
+
+  }
+
+
+   });
+
+  useFrame(()=>{
+
+    if(isMoving==true && isStopping==false){
+          console.log('Moving...')
+           // Angle 1
+          if(baseAngle != targetAngle1){
+            grandparentRef.current.rotation.y = THREE.MathUtils.lerp(grandparentRef.current.rotation.y,targetAngle1,0.05);
+            lastAngle1.current = grandparentRef.current.rotation.y;
+            // setAngle1((grandparentRef.current.rotation.y*(180/Math.PI)).toString());
+              if(abs((targetAngle1)-grandparentRef.current.rotation.y)<0.01){
+                // setAngle1((targetAngle1*(180/Math.PI)).toString());
+                baseAngle = targetAngle1;
+                lastAngle1.current = targetAngle1;
+                }
+          }else{
+            grandparentRef.current.rotation.y = targetAngle1;
+            lastAngle1.current = targetAngle1;
+            hasReachAngle1 = true;
+          }
+    
+          // Angle 2
+
+          if(shoulderAngle != targetAngle2){
+            parentRef.current.rotation.x = THREE.MathUtils.lerp(parentRef.current.rotation.x,targetAngle2+Math.PI/2,0.05);
+            console.log('Shoulder angle while moving...',parentRef.current.rotation.x)
+            lastAngle2.current = parentRef.current.rotation.x;
+            if(abs((targetAngle2+Math.PI/2)-parentRef.current.rotation.x)<0.01){
+              shoulderAngle = targetAngle2;
+              lastAngle2.current = targetAngle2+Math.PI/2;
+            }
+          }else{
+            parentRef.current.rotation.x = targetAngle2 +Math.PI/2;
+            lastAngle2.current = targetAngle2+Math.PI/2;
+            hasReachAngle2 = true;
+          }
+
+          // Angle 3
+    
+          if(elbowAngle != targetAngle3){
+            // setAngle3((child2Ref.current.rotation.y*(180/Math.PI)).toString());
+            child2Ref.current.rotation.x = THREE.MathUtils.lerp(child2Ref.current.rotation.x,targetAngle3,0.05);
+            lastAngle3.current = child2Ref.current.rotation.x;
+            if(abs((targetAngle3)-child2Ref.current.rotation.x)<0.01){
+              elbowAngle = targetAngle3;
+              lastAngle3.current = targetAngle3;
+            }
+          }else{
+            child2Ref.current.rotation.x = targetAngle3;
+            lastAngle3.current = targetAngle3;
+            hasReachAngle3 = true;
+          }
+
+          // Angle 4
+    
+          if(wrist1Angle != targetAngle4){
+            // setAngle4((child4Ref.current.rotation.y*(180/Math.PI)).toString());
+            child4Ref.current.rotation.x = THREE.MathUtils.lerp(child4Ref.current.rotation.x,targetAngle4+Math.PI/2,0.05);
+            lastAngle4.current = child4Ref.current.rotation.x;          
+            if(abs((targetAngle4+Math.PI/2)-child4Ref.current.rotation.x)<0.01){
+              wrist1Angle = targetAngle4;
+              lastAngle4.current = targetAngle4+Math.PI/2;
+            }
+          }else{
+            child4Ref.current.rotation.x = targetAngle4+Math.PI/2;
+            hasReachAngle4 = true;
+            lastAngle4.current = targetAngle4+Math.PI/2;
+          }
+    
       
-      // child 4
-      child4Ref.current.position.set(-0.067675, 0.285775, 0);
-      child4Ref.current.rotation.set((Math.PI/2)+wrist1Angle*(Math.PI/180), 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
-      child4Ref.current.scale.set(1, 1, 1);
-      
-      // child 5
-      child5Ref.current.position.set(0.043, 0.067675, 0);
-      child5Ref.current.rotation.set(wrist2Angle*(Math.PI/180), 0, -Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
-      child5Ref.current.scale.set(1, 1, 1);
-      
-      // child 6
-      child6Ref.current.position.set(-0.037825, 0.131, 0);
-      child6Ref.current.rotation.set(wrist3Angle*(Math.PI/180), 0, Math.PI/2); // (Math.PI/4, 0, Math.PI/2)
-      child6Ref.current.scale.set(1, 1, 1);
+          if(wrist2Angle != targetAngle5){
+            // setAngle5((child5Ref.current.rotation.y*(180/Math.PI)).toString());
+            child5Ref.current.rotation.x = THREE.MathUtils.lerp(child5Ref.current.rotation.x,targetAngle5,0.05);
+            lastAngle5.current = child5Ref.current.rotation.x;
+            if(abs((targetAngle5)-child5Ref.current.rotation.x)<0.01){
+              wrist2Angle = targetAngle5;
+              lastAngle5.current = targetAngle5;
+            }
+          }else{
+            child5Ref.current.rotation.x = targetAngle5;
+            hasReachAngle5 = true;
+            lastAngle5.current = targetAngle5;
+          }
+  
+          if(wrist3Angle != targetAngle6){
 
+            child6Ref.current.rotation.x = THREE.MathUtils.lerp(child6Ref.current.rotation.x,targetAngle6,0.05);
+            lastAngle6.current = child6Ref.current.rotation.x;
+            if(abs((targetAngle6)-child6Ref.current.rotation.x)<0.01){
+              wrist3Angle = targetAngle6;
+              lastAngle6.current = targetAngle6;
+            }
+          }else{
+            child6Ref.current.rotation.x = targetAngle6;
+              hasReachAngle6 = true;
+              lastAngle6.current = targetAngle6;
+            }
     }
+
+    if(isMoving==false && isStopping==true){
+      console.log('Stoping...')
+      setAngle1((lastAngle1.current*(180/Math.PI)).toString());
+      setAngle2(((lastAngle2.current-Math.PI/2)*(180/Math.PI)).toString());
+      setAngle3((lastAngle3.current*(180/Math.PI)).toString());
+      setAngle4(((lastAngle4.current-Math.PI/2)*(180/Math.PI)).toString());
+      setAngle5((lastAngle5.current*(180/Math.PI)).toString());
+      setAngle6((lastAngle6.current*(180/Math.PI)).toString());
+      setIsStopping(false);      
+      console.log('shoulder after stopping',lastAngle2.current);
+    }
+
+    if(hasReachAngle1 && hasReachAngle2 && hasReachAngle3 && hasReachAngle4 && hasReachAngle5 && hasReachAngle6){
+      setAngle1((targetAngle1*(180/Math.PI)).toString());  
+      setAngle2((targetAngle2*(180/Math.PI)).toString());  
+      setAngle3((targetAngle3*(180/Math.PI)).toString());  
+      setAngle4((targetAngle4*(180/Math.PI)).toString());  
+      setAngle5((targetAngle5*(180/Math.PI)).toString());  
+      setAngle6((targetAngle6*(180/Math.PI)).toString());  
+
+      console.log('Goal reached');
+
+      hasReachAngle1=false;
+      hasReachAngle2=false;
+      hasReachAngle3=false;
+      hasReachAngle4=false;
+      hasReachAngle5=false;
+      hasReachAngle6=false;
+
+      setIsMoving(false);
+      setIsStopping(false);
+    }
+
   });
+
 
   return (
     <group ref={grandparentRef}>
@@ -190,6 +351,7 @@ function CustomTransformations({baseAngle,shoulderAngle,elbowAngle,wrist1Angle, 
       </mesh>
     </group>
   );
+
 }
 
 
@@ -202,7 +364,6 @@ function TargetOrb({targetRef,X,Y,Z}) {
       target.current.position.set(parseFloat(Y)/1000, parseFloat(Z)/1000, parseFloat(X)/1000);
       target.current.rotation.set(0, 0, 0);  
       target.current.scale.set(1, 1, 1);
-
     }
   });
 
@@ -234,12 +395,23 @@ function App() {
 
   const intervalRef = useRef(null);
 
+  const baseRef = useRef();
+  const link1Ref = useRef();
+  const link2Ref = useRef();
+  const link3Ref = useRef();
+  const link4Ref = useRef();
+  const link5Ref = useRef();
+  const link6Ref = useRef();
+  const link7Ref = useRef();
+
   const[currTouchX,setCurrTouchX] = useState(0);
   const[startTouchX,setStartTouchX] = useState(0);
   const[direction,setDirection]=useState('');
   const[isVisible,setIsVisible]=useState(false);
   const[selectedTcpMenu,setSelectedTcpMenu]=useState('tcp_Pos');
   const[selectedInputMenu,setSelectedInputMenu]=useState('ANGLE_INPUT');
+  const[isMoving,setIsMoving] = useState(false);
+  const[isStopping,setIsStopping] = useState(false);
 
   const[angle1,setAngle1]=useState('0');
   const[angle2,setAngle2]=useState('-90');
@@ -247,6 +419,13 @@ function App() {
   const[angle4,setAngle4]=useState('-90');
   const[angle5,setAngle5]=useState('0');
   const[angle6,setAngle6]=useState('0');
+
+  const[targetAngle1,setTargetAngle1]=useState(0.0);
+  const[targetAngle2,setTargetAngle2]=useState(-Math.PI/2);
+  const[targetAngle3,setTargetAngle3]=useState(0.0);
+  const[targetAngle4,setTargetAngle4]=useState(-Math.PI/2);
+  const[targetAngle5,setTargetAngle5]=useState(0.0);
+  const[targetAngle6,setTargetAngle6]=useState(0.0);
 
   const[tcpX,setTcpX]=useState('0');
   const[tcpY,setTcpY]=useState('-291');
@@ -263,31 +442,47 @@ function App() {
   const wrist3Angle = parseInt(angle6) || 0;
 
   const handleTextChangeAngle=(inputText,inputId)=>{
-    if(inputId==='angle1'){
-      setAngle1(inputText);
-    }else if(inputId==='angle2'){
-      setAngle2(inputText);
-    }else if(inputId==='angle3'){
-      setAngle3(inputText);
-    }else if(inputId==='angle4'){
-      setAngle4(inputText);
-    }else if(inputId==='angle5'){
-      setAngle5(inputText);
-    }else if(inputId==='angle6'){
-      setAngle6(inputText);
-    }else if(inputId==='tcpX'){
-      setTcpX(inputText)
-    }else if(inputId==='tcpY'){
-      setTcpY(inputText)
-    }else if(inputId==='tcpZ'){
-      setTcpZ(inputText)
-    }else if(inputId==='tcpRX'){
-      setTcpRX(inputText)
-    }else if(inputId==='tcpRY'){
-      setTcpRY(inputText)
-    }else if(inputId==='tcpRZ'){
-      setTcpRZ(inputText)
-    }
+    switch(inputId) {
+      case 'angle1':
+        setAngle1(inputText);
+        break;
+      case 'angle2':
+        setAngle2(inputText);
+        break;
+      case 'angle3':
+        setAngle3(inputText);
+        break;
+      case 'angle4':
+        setAngle4(inputText);
+        break;
+      case 'angle5':
+        setAngle5(inputText);
+        break;
+      case 'angle6':
+        setAngle6(inputText);
+        break;
+      case 'tcpX':
+        setTcpX(inputText);
+        break;
+      case 'tcpY':
+        setTcpY(inputText);
+        break;
+      case 'tcpZ':
+        setTcpZ(inputText);
+        break;
+      case 'tcpRX':
+        setTcpRX(inputText);
+        break;
+      case 'tcpRY':
+        setTcpRY(inputText);
+        break;
+      case 'tcpRZ':
+        setTcpRZ(inputText);
+        break;
+      default:
+        // Handle unknown inputId if needed
+        break;
+      }
   }
 
   const debounceHandleTextChange = useCallback(
@@ -364,7 +559,8 @@ function App() {
 
 
 
-  const moveActuator=(direction)=>{
+  const moveActuator=async(direction)=>{
+
     /**
      * Function takes the current position of end effector and 
      * moves it a litte in direciton that is desire, 
@@ -376,6 +572,7 @@ function App() {
      */   
 
     // Need current move current state
+
     let currentAngles = [angle1,angle2,angle3,angle4,angle5,angle6]
     let currentTransf = [tcpX,tcpY,tcpZ,tcpRX,tcpRY,tcpRZ]
 
@@ -385,30 +582,31 @@ function App() {
     let targetTransf = currentTransf;
 
     console.log('Prev Target:',targetTransf);
+
     switch (direction) {
       case 'up':
             // Either moving up
-            targetTransf[2]+=50;  
+            targetTransf[2]+=100;  
             break;
       case 'down':
             // Either moving up
-            targetTransf[2]-=50;  
+            targetTransf[2]-=100;  
             break;
       case 'left':
             // Either moving up
-            targetTransf[1]+=50;  
+            targetTransf[1]+=100;  
             break;
       case 'right':
             // Either moving up
-            targetTransf[1]-=50;  
+            targetTransf[1]-=100;  
             break;
       case 'forward':
             // Either moving up
-            targetTransf[0]+=50;  
+            targetTransf[0]+=100;  
             break;
       case 'backward':
             // Either moving up
-            targetTransf[0]-=50;  
+            targetTransf[0]-=100;  
             break;    
       default:
         break;
@@ -416,8 +614,6 @@ function App() {
 
 
     console.log('Target:',targetTransf);
-
-    console.log('Target norm:',norm([targetTransf[0],targetTransf[1],targetTransf[2]]))
 
     //Check if the target
     if(norm([targetTransf[0],targetTransf[1],targetTransf[2]])>1520){
@@ -429,7 +625,7 @@ function App() {
     y = targetTransf[1]/1000;
     z = targetTransf[2]/1000;
 
-    ikAngles = newJasperIk([x,y,z,-90.0,0.0,-180])
+    ikAngles = await newJasperIk([x,y,z,-90.0,0.0,-180]);
 
     // Go through each result and find the nearest solution to true value
     bestResult = []
@@ -453,14 +649,25 @@ function App() {
     }
 
     let result = ikAngles[7].map(value => ceil(value*100)/100);
-    
+    // bestTransf = forwarkKinmeatics(result); // Hard pressing the best move result from 
+
+    console.log('Result: ',result);
+    console.log('Best result: ',bestResult);
+
     // Set Angles
-    setAngle1(result[0].toString());
-    setAngle2(result[1].toString());
-    setAngle3(result[2].toString());
-    setAngle4(result[3].toString());
-    setAngle5(result[4].toString());
-    setAngle6(result[5].toString());
+    // setAngle1(result[0].toString());
+    // setAngle2(result[1].toString());
+    // setAngle3(result[2].toString());
+    // setAngle4(result[3].toString());
+    // setAngle5(result[4].toString());
+    // setAngle6(result[5].toString());
+    
+    setTargetAngle1(result[0]*(Math.PI/180));
+    setTargetAngle2(result[1]*(Math.PI/180));
+    setTargetAngle3(result[2]*(Math.PI/180));
+    setTargetAngle4(result[3]*(Math.PI/180));
+    setTargetAngle5(result[4]*(Math.PI/180));
+    setTargetAngle6(result[5]*(Math.PI/180));
 
     // Set TCP
     setTcpX((bestTransf[0]*1000).toString());
@@ -470,6 +677,14 @@ function App() {
     setTcpRY(bestTransf[4].toString());
     setTcpRZ(bestTransf[5].toString());
 
+    setIsMoving(true);
+    setIsStopping(false);
+  }
+
+  const stopActuator=async()=>{
+    console.log('Called stop...')
+    setIsMoving(false);
+    setIsStopping(true);
   }
 
 
@@ -502,7 +717,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 btransparent'>
                       {/* <Text>1</Text> */}
-                    <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('up')}} onTouchStart={()=>{handleOrbMovePressIn('down')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                    <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('up')}} onPressOut={()=>{stopActuator()}} />
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -511,7 +726,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>3</Text> */}
-                      <Icon name='arrow-upward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('down')}} onTouchStart={()=>{handleOrbMovePressIn('up')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-downward' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('down')}} onPressOut={()=>{stopActuator()}} />
                     </TouchableOpacity>
                   </View>
 
@@ -522,7 +737,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>5</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('forward')}} onTouchStart={()=>{handleOrbMovePressIn('forward')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('forward')}} onPressOut={()=>{stopActuator()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -533,7 +748,7 @@ function App() {
                   <View id='posConRow3' className='flex-1 flex-row'>
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>7</Text> */}
-                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('left')}} onTouchStart={()=>{handleOrbMovePressIn('left')}} onTouchEnd={()=>{handleOrbMovePressOut()}} />
+                      <Icon name='arrow-circle-left' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('left')}} onPressOut={()=>{stopActuator()}} />
                     </TouchableOpacity>
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -542,7 +757,7 @@ function App() {
 
                     <TouchableOpacity className='flex-1 bg-transparent'>
                       {/* <Text>9</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('right')}} onTouchStart={()=>{handleOrbMovePressIn('right')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('right')}} onPressOut={()=>{stopActuator()}}/>
                     </TouchableOpacity>
                   </View>
 
@@ -553,7 +768,7 @@ function App() {
   
                     <TouchableOpacity className='flex-1 flex-row bg-transparent justify-center items-center rotate-90'>
                       {/* <Text>11</Text> */}
-                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{moveActuator('backward')}} onTouchStart={()=>{handleOrbMovePressIn('backward')}} onTouchEnd={()=>{handleOrbMovePressOut()}}/>
+                      <Icon name='arrow-circle-right' size={55} color='#00B2FF' className='h-full w-full' onPress={()=>{}} onPressIn={()=>{moveActuator('backward')}} onPressOut={()=>{stopActuator()}}/>
                     </TouchableOpacity>
   
                     <TouchableOpacity className='flex-1 bg-transparent'>
@@ -570,20 +785,17 @@ function App() {
           <View className='bg-gray-500 flex-1 justify-center'> 
             {/* <Text className=' bg-green-300  text-center' >3D Scene</Text> */}
 
-             {/*Canvas */}
-                
+             {/*Canvas */}                
               
                     <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
                       <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
                       <CameraControl cameraRef={cameraRef} direction={direction} />
                       <ambientLight intensity={1} />
                       <gridHelper args={[2,5,'white','gray']} className="z-1"/>
-                      <CustomTransformations baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} className="z-2" />
-                    
+                      <CustomTransformations baseRef={baseRef} link1Ref={link1Ref} link2Ref={link2Ref} link3Ref={link3Ref} link4Ref={link4Ref} link5Ref={link5Ref} link6Ref={link6Ref} link7Ref={link7Ref} baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} targetAngle1={targetAngle1} targetAngle2={targetAngle2} targetAngle3={targetAngle3} targetAngle4={targetAngle4} targetAngle5={targetAngle5} targetAngle6={targetAngle6} setAngle1={setAngle1} setAngle2={setAngle2} setAngle3={setAngle3} setAngle4={setAngle4} setAngle5={setAngle5} setAngle6={setAngle6} isMoving={isMoving} setIsMoving={setIsMoving} isStopping={isStopping} setIsStopping={setIsStopping} className="z-2" />                    
                       <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
                     </Canvas>
-             
-               
+                            
           </View>
 
         {/* Right Pane */}
