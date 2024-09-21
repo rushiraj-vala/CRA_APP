@@ -722,8 +722,8 @@ export function newJasperIk(target_Pos){
     // theta 1
     let T06 = transform_matrix;
     let P05 = multiply(T06,[[0],[0],[-d6],[1]]);
-    let psi = atan2(P05[1][0], P05[0][0]);
-    let phi = acos((d2 + d4 + d3) / sqrt(P05[0]*P05[0] + P05[1]*P05[1]));
+    let psi = re(atan2(P05[1][0], P05[0][0]));
+    let phi = re(acos((d2 + d4 + d3) / sqrt(P05[0]*P05[0] + P05[1]*P05[1])));
 
     theta[0][0] = psi + phi + pi / 2;
     theta[0][1] = psi + phi + pi / 2;
@@ -763,8 +763,8 @@ export function newJasperIk(target_Pos){
         let angle = theta[0][i]
         th = atan2((-T60[1][0] * sin(angle) + T60[1][1] * cos(angle)),
                    (T60[0][0] * sin(angle) - T60[0][1] * cos(angle)));
-        theta[5][i] = th
-        theta[5][i+1] = th;
+        theta[5][i] = re(th)
+        theta[5][i+1] = re(th);
     }
 
     // theta 3
@@ -804,7 +804,7 @@ export function newJasperIk(target_Pos){
 
         P13 = multiply(T14,[[0], [-d4], [0], [1]]);
         angle = theta[2][i];
-        theta[1][i] = atan2(-P13[1][0], -P13[0][0]) - asin(-a3*sin(angle) / sqrt(P13[0][0]*P13[0][0] + P13[1][0]*P13[1][0]))
+        theta[1][i] = re(atan2(-P13[1][0], -P13[0][0]) - asin(-a3*sin(angle) / sqrt(P13[0][0]*P13[0][0] + P13[1][0]*P13[1][0])));
 
         //  Update theta local
         thetasLocal = [theta[0][i],theta[1][i],theta[2][i],theta[3][i],theta[4][i],theta[5][i]];
@@ -817,7 +817,7 @@ export function newJasperIk(target_Pos){
         numer = T34[1][0];
         denom = T34[0][0];
 
-        theta[3][i] = atan2( numer,denom);
+        theta[3][i] = re(atan2( numer,denom));
 
     }
 

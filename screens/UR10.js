@@ -6,14 +6,13 @@ import * as THREE  from 'three';
 import { View,Text, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { debounce } from 'lodash';
 import { OrthographicCamera } from '@react-three/drei/native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Icon  from 'react-native-vector-icons/MaterialIcons';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import InverseKinematics, { newJasperIk } from './InverseKinematics';
-import closeFormedIK from './closeFormedIK';
-import japersIK from './InverseKinematics';
+import { newJasperIk } from './InverseKinematics';
 import { abs, boolean, ceil, isString, min, norm, pi, sqrt } from 'mathjs';
 import forwarkKinmeatics from './forwarkKinmeatics';
+import { Thread } from "react-native-parallel";
+
 
 const CameraControl = ({cameraRef,direction}) =>{
   useFrame(()=>{
@@ -98,10 +97,8 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
   let hasReachAngle5 = false;
   let hasReachAngle6 = false;
 
-  console.log('controlling...');
   // Update transformations in the frame loop
   useEffect(() => {
-    console.log('use effect was called..')
     if (grandparentRef.current && parentRef.current && child1Ref.current) {
 
       // Example: Set initial transformations for each level
@@ -155,7 +152,6 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
   useFrame(()=>{
 
     if(isMoving==true && isStopping==false){
-          console.log('Moving...')
            // Angle 1
           if(baseAngle != targetAngle1){
             grandparentRef.current.rotation.y = THREE.MathUtils.lerp(grandparentRef.current.rotation.y,targetAngle1,0.05);
@@ -176,7 +172,6 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
 
           if(shoulderAngle != targetAngle2){
             parentRef.current.rotation.x = THREE.MathUtils.lerp(parentRef.current.rotation.x,targetAngle2+Math.PI/2,0.05);
-            console.log('Shoulder angle while moving...',parentRef.current.rotation.x)
             lastAngle2.current = parentRef.current.rotation.x;
             if(abs((targetAngle2+Math.PI/2)-parentRef.current.rotation.x)<0.01){
               shoulderAngle = targetAngle2;
@@ -259,7 +254,6 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
       setAngle5((lastAngle5.current*(180/Math.PI)).toString());
       setAngle6((lastAngle6.current*(180/Math.PI)).toString());
       setIsStopping(false);      
-      console.log('shoulder after stopping',lastAngle2.current);
     }
 
     if(hasReachAngle1 && hasReachAngle2 && hasReachAngle3 && hasReachAngle4 && hasReachAngle5 && hasReachAngle6){
@@ -386,7 +380,6 @@ function App() {
     return () =>{
       ScreenOrientation.unlockAsync();
     };
-
   },[]);
 
   const cameraRef = useRef();
@@ -573,59 +566,114 @@ function App() {
 
     // Need current move current state
 
+    // const thread = new Thread('../thread.js');
+
+    // thread.postMessage('hello');
+
+    // thread.onmessage = (message)=>{console.log(message)};
+
+    // thread.terminate();
+
     let currentAngles = [angle1,angle2,angle3,angle4,angle5,angle6]
     let currentTransf = [tcpX,tcpY,tcpZ,tcpRX,tcpRY,tcpRZ]
 
     currentAngles = currentAngles.map(item=>parseFloat(item));
     currentTransf = currentTransf.map(item=>parseFloat(item));
 
-    let targetTransf = currentTransf;
+    let targetTransf = [];
 
-    console.log('Prev Target:',targetTransf);
+    // Do not make reference ->   X  let targetUpTransf = currentTransf; 
+    let targetUpTransf = [...currentTransf];
+    let targetDownTransf = [...currentTransf];
+    let targetLeftTransf = [...currentTransf];
+    let targetRightTransf = [...currentTransf];
+    let targetForwardTransf = [...currentTransf];
+    let targetBackwardTransf = [...currentTransf];
+
+    console.log('Firstly:',targetDownTransf);
+    targetUpTransf[2]+=100;
+    targetDownTransf[2] = targetDownTransf[2]-100;
+    targetLeftTransf[1]+=100;
+    targetRightTransf[1]-=100;
+    targetForwardTransf[0]+=100;
+    targetBackwardTransf[0]-=100;
+    console.log('Afterly:',targetDownTransf);
+
+    let ikAnglesUp = []
+    let ikAnglesDown = []
+    let ikAnglesLeft = []
+    let ikAnglesRight = []
+    let ikAnglesForward = []
+    let ikAnglesBackward = []
+
+    try {
+      ikAnglesUp = await newJasperIk([targetUpTransf[0]/1000,targetUpTransf[1]/1000,targetUpTransf[2]/1000,-90.0,0.0,-180]);
+      ikAnglesDown = await newJasperIk([targetDownTransf[0]/1000,targetDownTransf[1]/1000,targetDownTransf[2]/1000,-90.0,0.0,-180]);
+      ikAnglesLeft = await newJasperIk([targetLeftTransf[0]/1000,targetLeftTransf[1]/1000,targetLeftTransf[2]/1000,-90.0,0.0,-180]);
+      ikAnglesRight = await newJasperIk([targetRightTransf[0]/1000,targetRightTransf[1]/1000,targetRightTransf[2]/1000,-90.0,0.0,-180]);
+      ikAnglesForward = await newJasperIk([targetForwardTransf[0]/1000,targetForwardTransf[1]/1000,targetForwardTransf[2]/1000,-90.0,0.0,-180]);
+      ikAnglesBackward = await newJasperIk([targetForwardTransf[0]/1000,targetBackwardTransf[1]/1000,targetBackwardTransf[2]/1000,-90.0,0.0,-180]);      
+    } catch (error) {
+      console.error(error);
+    }
+
+    let ikAngles = []
 
     switch (direction) {
       case 'up':
             // Either moving up
-            targetTransf[2]+=100;  
+            ikAngles = ikAnglesUp;
+            targetTransf = targetUpTransf;
+
             break;
       case 'down':
             // Either moving up
-            targetTransf[2]-=100;  
+            ikAngles = ikAnglesDown;
+            targetTransf = targetDownTransf;
             break;
       case 'left':
             // Either moving up
-            targetTransf[1]+=100;  
+            ikAngles = ikAnglesLeft;
+            targetTransf = targetLeftTransf;
             break;
       case 'right':
             // Either moving up
-            targetTransf[1]-=100;  
+            ikAngles = ikAnglesRight;
+            targetTransf = targetRightTransf;
             break;
       case 'forward':
             // Either moving up
-            targetTransf[0]+=100;  
+            ikAngles = ikAnglesForward;
+            targetTransf = targetForwardTransf;
             break;
       case 'backward':
             // Either moving up
-            targetTransf[0]-=100;  
+            ikAngles = ikAnglesBackward;
+            targetTransf = targetBackwardTransf;
             break;    
       default:
+            console.log('Switch Statement failed');
         break;
     }
 
 
     console.log('Target:',targetTransf);
 
-    //Check if the target
-    if(norm([targetTransf[0],targetTransf[1],targetTransf[2]])>1520){
-      console.log('Target pos out of reach')
-      return;
-    }
+    // //Check if the target
+    // if(norm([targetTransf[0],targetTransf[1],targetTransf[2]])>1520){
+    //   console.log('Target pos out of reach')
+    //   return;
+    // }
     
     x = targetTransf[0]/1000;
     y = targetTransf[1]/1000;
     z = targetTransf[2]/1000;
 
-    ikAngles = await newJasperIk([x,y,z,-90.0,0.0,-180]);
+    // try {
+    //   ikAngles = await newJasperIk([x,y,z,-90.0,0.0,-180]); 
+    // } catch (error) {
+    //   console.error(error);
+    // }
 
     // Go through each result and find the nearest solution to true value
     bestResult = []
@@ -647,20 +695,14 @@ function App() {
       }      
       
     }
+    console.log('Result: ',result);
+    console.log('Best result: ',bestResult);
 
     let result = ikAngles[7].map(value => ceil(value*100)/100);
     // bestTransf = forwarkKinmeatics(result); // Hard pressing the best move result from 
 
-    console.log('Result: ',result);
-    console.log('Best result: ',bestResult);
 
     // Set Angles
-    // setAngle1(result[0].toString());
-    // setAngle2(result[1].toString());
-    // setAngle3(result[2].toString());
-    // setAngle4(result[3].toString());
-    // setAngle5(result[4].toString());
-    // setAngle6(result[5].toString());
     
     setTargetAngle1(result[0]*(Math.PI/180));
     setTargetAngle2(result[1]*(Math.PI/180));
