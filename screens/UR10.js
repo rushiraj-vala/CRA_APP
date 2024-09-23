@@ -1,7 +1,7 @@
 
 // App.js
 import React, { useCallback, useRef, useState, useSharedValue, useEffect } from 'react';
-import { Canvas, useFrame, useThree,  } from '@react-three/fiber/native';
+import { Canvas, useFrame, useThree, } from '@react-three/fiber/native';
 import * as THREE  from 'three';
 import { View,Text, TextInput, TouchableOpacity, Modal } from 'react-native';
 import { debounce } from 'lodash';
@@ -11,7 +11,7 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import { newJasperIk } from './InverseKinematics';
 import { abs, boolean, ceil, isString, min, norm, pi, sqrt } from 'mathjs';
 import forwarkKinmeatics from './forwarkKinmeatics';
-import { Thread } from "react-native-parallel";
+
 
 
 const CameraControl = ({cameraRef,direction}) =>{
@@ -247,22 +247,22 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
 
     if(isMoving==false && isStopping==true){
       console.log('Stoping...')
-      setAngle1((lastAngle1.current*(180/Math.PI)).toString());
-      setAngle2(((lastAngle2.current-Math.PI/2)*(180/Math.PI)).toString());
-      setAngle3((lastAngle3.current*(180/Math.PI)).toString());
-      setAngle4(((lastAngle4.current-Math.PI/2)*(180/Math.PI)).toString());
-      setAngle5((lastAngle5.current*(180/Math.PI)).toString());
-      setAngle6((lastAngle6.current*(180/Math.PI)).toString());
+      setAngle1((ceil((lastAngle1.current*(180/Math.PI))*1000)/1000).toString());
+      setAngle2((ceil((((lastAngle2.current-Math.PI/2)*(180/Math.PI)))*1000)/1000).toString());
+      setAngle3((ceil((lastAngle3.current*(180/Math.PI))*1000)/1000).toString());
+      setAngle4((ceil((((lastAngle4.current-Math.PI/2)*(180/Math.PI)))*1000)/1000).toString());
+      setAngle5((ceil((lastAngle5.current*(180/Math.PI))*1000)/1000).toString());
+      setAngle6((ceil((lastAngle6.current*(180/Math.PI))*1000)/1000).toString());
       setIsStopping(false);      
     }
 
     if(hasReachAngle1 && hasReachAngle2 && hasReachAngle3 && hasReachAngle4 && hasReachAngle5 && hasReachAngle6){
-      setAngle1((targetAngle1*(180/Math.PI)).toString());  
-      setAngle2((targetAngle2*(180/Math.PI)).toString());  
-      setAngle3((targetAngle3*(180/Math.PI)).toString());  
-      setAngle4((targetAngle4*(180/Math.PI)).toString());  
-      setAngle5((targetAngle5*(180/Math.PI)).toString());  
-      setAngle6((targetAngle6*(180/Math.PI)).toString());  
+      setAngle1((ceil(targetAngle1*(180/Math.PI)*1000)/1000).toString());  
+      setAngle2((ceil(targetAngle2*(180/Math.PI)*1000)/1000).toString());  
+      setAngle3((ceil(targetAngle3*(180/Math.PI)*1000)/1000).toString());  
+      setAngle4((ceil(targetAngle4*(180/Math.PI)*1000)/1000).toString());  
+      setAngle5((ceil(targetAngle5*(180/Math.PI)*1000)/1000).toString());  
+      setAngle6((ceil(targetAngle6*(180/Math.PI)*1000)/1000).toString());  
 
       console.log('Goal reached');
 
@@ -285,64 +285,100 @@ function CustomTransformations({baseRef,link1Ref,link2Ref,link3Ref,link4Ref,link
       {/* Grandparent Cylinder */}
       <mesh>
         <cylinderGeometry args={[0.075, 0.075, 0.275, 32]} />
-        <meshStandardMaterial color="red" />
+        <meshStandardMaterial color="white" />
 
         {/* Parent Cylinder */}
         <group ref={parentRef}>
           <mesh>
             <cylinderGeometry args={[0.075, 0.075, 0.270, 32]} />
-            <meshStandardMaterial color="green" />
+            <meshStandardMaterial color="silver" />
 
             {/* Child Cylinder */}
             <group ref={child1Ref}>
               <mesh>
                 <cylinderGeometry args={[0.055, 0.055, 0.6127, 32]} />
-                <meshStandardMaterial color="blue" />
+                <meshStandardMaterial color="white" />
               </mesh>
 
                   {/* Child 2 Cylinder */}
                   <group ref={child2Ref}>
                     <mesh>
                       <cylinderGeometry args={[0.058, 0.058, 0.2792, 32]} />
-                      <meshStandardMaterial color="yellow" />
+                      <meshStandardMaterial color="silver" />
                     </mesh>
 
                         {/* Child 3 Cylinder */}
                         <group ref={child3Ref}>
                           <mesh>
                             <cylinderGeometry args={[0.0475, 0.0475, 0.57155, 32]} />
-                            <meshStandardMaterial color="violet" />
+                            <meshStandardMaterial color="white" />
                           </mesh>
                           
                             {/* Child 4 Cylinder */}
                               <group ref={child4Ref}>
                                 <mesh>
                                   <cylinderGeometry args={[0.045, 0.045, 0.13535, 32]} />
-                                  <meshStandardMaterial color="orange" />
+                                  <meshStandardMaterial color="silver" />
                                 </mesh>
 
                                 {/* Child 5 Cylinder */}
                                   <group ref={child5Ref}>
                                     <mesh>
                                       <cylinderGeometry args={[0.045, 0.045, 0.176, 32]} />
-                                      <meshStandardMaterial color="indigo" />
+                                      <meshStandardMaterial color="white" />
                                     </mesh>
 
                                   {/* Child 6 Cylinder */}
                                     <group ref={child6Ref}>
                                       <mesh>
                                         <cylinderGeometry args={[0.045, 0.045, 0.176, 32]} />
+                                        <meshStandardMaterial color="silver" />
+                                      </mesh>
+                                      <mesh position={[0,-0.09,0]}>
+                                        <cylinderGeometry args={[0.045, 0.045, 0.04, 32]} />
                                         <meshStandardMaterial color="cyan" />
                                       </mesh>
                                     </group>
+
+                                    <mesh position={[0,-0.09,0]}>
+                                        <cylinderGeometry args={[0.045, 0.045, 0.04, 32]} />
+                                        <meshStandardMaterial color="cyan" />
+                                    </mesh>
                                   </group>
+
+                                  <mesh position={[0,-0.11,0]}>
+                                      <cylinderGeometry args={[0.045, 0.045, 0.02, 32]} />
+                                      <meshStandardMaterial color="cyan" />
+                                  </mesh>
+                                  {/* <mesh position={[0,0.11,0]}>
+                                      <cylinderGeometry args={[0.045, 0.045, 0.02, 32]} />
+                                      <meshStandardMaterial color="cyan" />
+                                  </mesh> */}
                               </group>
                         </group>
+
+                        <mesh position={[0,0.15,0]}>
+                            <cylinderGeometry args={[0.058, 0.058, 0.04, 32]} />
+                            <meshStandardMaterial color="cyan" />
+                        </mesh>
+                        <mesh position={[0,-0.15,0]}>
+                            <cylinderGeometry args={[0.058, 0.058, 0.04, 32]} />
+                            <meshStandardMaterial color="cyan" />
+                        </mesh>
                   </group>
             </group>
           </mesh>
+          <mesh position={[0,0.15,0]}>
+            <cylinderGeometry args={[0.075, 0.075, 0.04, 32]} />
+            <meshStandardMaterial color="cyan" />
+          </mesh>
         </group>
       </mesh>
+      <mesh position={[0,0.1475,0]}>
+      <cylinderGeometry args={[0.075, 0.075, 0.005, 32]} />
+      <meshStandardMaterial color="cyan" />
+      </mesh>
+
     </group>
   );
 
@@ -387,6 +423,8 @@ function App() {
   const targetOrbRef = useRef();
 
   const intervalRef = useRef(null);
+
+  const bgColor = new THREE.Color(0x17171b);
 
   const baseRef = useRef();
   const link1Ref = useRef();
@@ -590,14 +628,12 @@ function App() {
     let targetForwardTransf = [...currentTransf];
     let targetBackwardTransf = [...currentTransf];
 
-    console.log('Firstly:',targetDownTransf);
-    targetUpTransf[2]+=100;
-    targetDownTransf[2] = targetDownTransf[2]-100;
-    targetLeftTransf[1]+=100;
-    targetRightTransf[1]-=100;
-    targetForwardTransf[0]+=100;
-    targetBackwardTransf[0]-=100;
-    console.log('Afterly:',targetDownTransf);
+    targetUpTransf[2]+=300;
+    targetDownTransf[2]-=300;
+    targetLeftTransf[1]+=300;
+    targetRightTransf[1]-=300;
+    targetForwardTransf[0]+=300;
+    targetBackwardTransf[0]-=300;
 
     let ikAnglesUp = []
     let ikAnglesDown = []
@@ -668,12 +704,6 @@ function App() {
     x = targetTransf[0]/1000;
     y = targetTransf[1]/1000;
     z = targetTransf[2]/1000;
-
-    // try {
-    //   ikAngles = await newJasperIk([x,y,z,-90.0,0.0,-180]); 
-    // } catch (error) {
-    //   console.error(error);
-    // }
 
     // Go through each result and find the nearest solution to true value
     bestResult = []
@@ -830,12 +860,17 @@ function App() {
              {/*Canvas */}                
               
                     <Canvas className='z-0' onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} col>
+                    <color
+                      attach="background"
+                      args={[bgColor.r, bgColor.g, bgColor.b]}
+                    />
                       <OrthographicCamera makeDefault zoom={80} position={[25,25,25]} ref={cameraRef}/>
                       <CameraControl cameraRef={cameraRef} direction={direction} />
                       <ambientLight intensity={1} />
                       <gridHelper args={[2,5,'white','gray']} className="z-1"/>
                       <CustomTransformations baseRef={baseRef} link1Ref={link1Ref} link2Ref={link2Ref} link3Ref={link3Ref} link4Ref={link4Ref} link5Ref={link5Ref} link6Ref={link6Ref} link7Ref={link7Ref} baseAngle={angle1} shoulderAngle={angle2} elbowAngle={angle3} wrist1Angle={angle4} wrist2Angle={angle5} wrist3Angle={angle6} targetAngle1={targetAngle1} targetAngle2={targetAngle2} targetAngle3={targetAngle3} targetAngle4={targetAngle4} targetAngle5={targetAngle5} targetAngle6={targetAngle6} setAngle1={setAngle1} setAngle2={setAngle2} setAngle3={setAngle3} setAngle4={setAngle4} setAngle5={setAngle5} setAngle6={setAngle6} isMoving={isMoving} setIsMoving={setIsMoving} isStopping={isStopping} setIsStopping={setIsStopping} className="z-2" />                    
-                      <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} />
+                      {/* <TargetOrb targetRef={targetOrbRef} X={tcpX} Y={tcpY} Z={tcpZ} /> */}
+ 
                     </Canvas>
                             
           </View>
